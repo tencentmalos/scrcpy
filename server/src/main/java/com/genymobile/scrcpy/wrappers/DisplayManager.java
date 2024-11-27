@@ -12,7 +12,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
-import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 
@@ -116,28 +115,24 @@ public final class DisplayManager {
     }
 
     public DisplayInfo getDisplayInfo(int displayId) {
-        return getDisplayInfoFromDumpsysDisplay(displayId);
-//        try {
-//            //Ln.w("getDisplayInfo, display id =: " + displayId);
-//            Method method = manager.getClass().getMethod("getDisplayInfo", int.class);
-//            method.setAccessible(true); //Allow access to private method
-//            Object displayInfo = method.invoke(manager, displayId);
-//            if (displayInfo == null) {
-//                // fallback when displayInfo is null
-//                return getDisplayInfoFromDumpsysDisplay(displayId);
-//            }
-//            Class<?> cls = displayInfo.getClass();
-//            // width and height already take the rotation into account
-//            int width = cls.getDeclaredField("logicalWidth").getInt(displayInfo);
-//            int height = cls.getDeclaredField("logicalHeight").getInt(displayInfo);
-//            int rotation = cls.getDeclaredField("rotation").getInt(displayInfo);
-//            int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
-//            int flags = cls.getDeclaredField("flags").getInt(displayInfo);
-//            int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
-//            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi);
-//        } catch (ReflectiveOperationException e) {
-//            throw new AssertionError(e);
-//        }
+        try {
+            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
+            if (displayInfo == null) {
+                // fallback when displayInfo is null
+                return getDisplayInfoFromDumpsysDisplay(displayId);
+            }
+            Class<?> cls = displayInfo.getClass();
+            // width and height already take the rotation into account
+            int width = cls.getDeclaredField("logicalWidth").getInt(displayInfo);
+            int height = cls.getDeclaredField("logicalHeight").getInt(displayInfo);
+            int rotation = cls.getDeclaredField("rotation").getInt(displayInfo);
+            int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
+            int flags = cls.getDeclaredField("flags").getInt(displayInfo);
+            int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 
     public int[] getDisplayIds() {

@@ -46,11 +46,11 @@ public class AudioDirectCapture implements AudioCapture {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
+    @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
     @SuppressLint({"WrongConstant", "MissingPermission"})
     private static AudioRecord createAudioRecord(int audioSource) {
         AudioRecord.Builder builder = new AudioRecord.Builder();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
             builder.setContext(FakeContext.get());
         }
@@ -64,25 +64,6 @@ public class AudioDirectCapture implements AudioCapture {
 
         return builder.build();
     }
-
-//    @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
-//    @SuppressLint({"WrongConstant", "MissingPermission"})
-//    private static AudioRecord createAudioRecord(int audioSource) {
-//        AudioRecord.Builder builder = new AudioRecord.Builder();
-//        if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
-//            // On older APIs, Workarounds.fillAppInfo() must be called beforehand
-//            builder.setContext(FakeContext.get());
-//        }
-//        builder.setAudioSource(audioSource);
-//        builder.setAudioFormat(AudioConfig.createAudioFormat());
-//        int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
-//        if (minBufferSize > 0) {
-//            // This buffer size does not impact latency
-//            builder.setBufferSizeInBytes(8 * minBufferSize);
-//        }
-//
-//        return builder.build();
-//    }
 
     private static void startWorkaroundAndroid11() {
         // Android 11 requires Apps to be at foreground to record audio.
