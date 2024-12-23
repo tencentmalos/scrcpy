@@ -237,6 +237,7 @@ struct scrcpy_options {
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
     enum sc_gamepad_input_mode gamepad_input_mode;
+    uint64_t external_window_handle;
     struct sc_mouse_bindings mouse_bindings;
     enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
