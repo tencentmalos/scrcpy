@@ -186,6 +186,12 @@ executable('scrcpy', src,
            install: true,
            c_args: [])
 
+# shared_library('scrcpy_shared', src,
+#            dependencies: dependencies,
+#            include_directories: src_dir,
+#            install: true,
+#            c_args: [])
+
 # <https://mesonbuild.com/Builtin-options.html#directories>
 datadir = get_option('datadir') # by default 'share'
 

@@ -13,6 +13,10 @@
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
+int sc_test_add(int a, int b) {
+    return a+b;
+}
+
 static inline struct sc_size
 get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
     struct sc_size oriented_size;
@@ -168,7 +172,8 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
 
     int dw;
     int dh;
-    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+    SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
+    LOGI("Drawable size: %dx%d", dw, dh);
 
     struct sc_size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale
@@ -835,6 +840,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    LOGI("scrcpy window resized");
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_MAXIMIZED:
@@ -844,6 +850,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     screen->minimized = true;
                     break;
                 case SDL_WINDOWEVENT_RESTORED:
+                    LOGI("scrcpy window restored");
                     if (screen->fullscreen) {
                         // On Windows, in maximized+fullscreen, disabling
                         // fullscreen mode unexpectedly triggers the "restored"
@@ -852,6 +859,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                         // not maximized visually).
                         break;
                     }
+                    LOGI("scrcpy window restored used");
                     screen->maximized = false;
                     screen->minimized = false;
                     apply_pending_resize(screen);
