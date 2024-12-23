@@ -9,4 +9,6 @@
 char *
 sc_get_env(const char *varname);
 
+void sc_set_env(const char* varname, const char* variable, int is_overwrite);
+
 #endif

@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/net_cmd/net_cmd.cpp',
     'src/adb/adb.c',
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',
@@ -63,6 +64,13 @@ src = [
     'src/util/thread.c',
     'src/util/tick.c',
     'src/util/timeout.c',
+    'src/util/cmd_input.cpp',
+    'src/util/capture_screen.cpp',
+    'src/util/image_transmitter.cpp',
+    'src/util/shared_memory.c',
+    'src/util/file_mapping.c',
+    'src/util/env.c',
+    'src/util/work_dir.cpp',
 ]
 
 conf = configuration_data()
@@ -118,11 +126,13 @@ dependencies = [
     dependency('libavutil', static: static),
     dependency('libswresample', static: static),
     dependency('sdl2', version: '>= 2.0.5', static: static),
+    dependency('libevent', static: static),
 ]
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
 endif
+
 
 if usb_support
     dependencies += dependency('libusb-1.0', static: static)
@@ -170,6 +180,8 @@ conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
+warning('->server debugger', get_option('server_debugger'))
+
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
 
@@ -180,11 +192,18 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
+
 executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
            c_args: [])
+
+# shared_library('scrcpy_shared', src,
+#            dependencies: dependencies,
+#            include_directories: src_dir,
+#            install: true,
+#            c_args: [])
 
 # <https://mesonbuild.com/Builtin-options.html#directories>
 datadir = get_option('datadir') # by default 'share'

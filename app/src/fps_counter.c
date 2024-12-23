@@ -5,6 +5,8 @@
 
 #include "util/log.h"
 
+#include "net_cmd/net_cmd.h"
+
 #define SC_FPS_COUNTER_INTERVAL SC_TICK_FROM_SEC(1)
 
 bool
@@ -48,6 +50,13 @@ static void
 display_fps(struct sc_fps_counter *counter) {
     unsigned rendered_per_second =
         counter->nr_rendered * SC_TICK_FREQ / SC_FPS_COUNTER_INTERVAL;
+
+    if(net_cmd_is_running()) {
+        //Just set the counter to net_cmd
+        net_cmd_set_current_fps(rendered_per_second, counter->nr_skipped);
+        return;
+    }
+
     if (counter->nr_skipped) {
         LOGI("%u fps (+%u frames skipped)", rendered_per_second,
                                             counter->nr_skipped);

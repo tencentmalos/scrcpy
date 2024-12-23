@@ -17,6 +17,7 @@
 #include "util/thread.h"
 #include "version.h"
 
+
 #ifdef _WIN32
 #include <windows.h>
 #include "util/str.h"
@@ -151,3 +152,27 @@ main(int argc, char *argv[]) {
     return ret;
 #endif
 }
+
+int sc_run_as_dll_mode(const char* arginfo)
+{
+    const char *delimiter = " ";
+    
+    char argbuf[2048];
+
+    strcpy(argbuf, arginfo);
+
+    char *argv[50];
+    int argc = 0;
+    
+
+    char *token = strtok(argbuf, delimiter);
+    while (token != NULL) {
+        argv[argc++] = token;
+        token = strtok(NULL, delimiter);
+    }
+
+    int ret = main_scrcpy(argc, argv);
+    
+    return ret;
+}
+

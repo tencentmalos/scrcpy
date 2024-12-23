@@ -13,6 +13,10 @@
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
+int sc_test_add(int a, int b) {
+    return a+b;
+}
+
 static inline struct sc_size
 get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
     struct sc_size oriented_size;
@@ -162,15 +166,17 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
     return screen->im.mp && screen->im.mp->relative_mode;
 }
 
-static void
-sc_screen_update_content_rect(struct sc_screen *screen) {
+
+void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, int dh) {
     assert(screen->video);
 
-    int dw;
-    int dh;
-    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
-
     struct sc_size content_size = screen->content_size;
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        content_size.width /= 2;
+    }
+
     // The drawable size is the window size * the HiDPI scale
     struct sc_size drawable_size = {dw, dh};
 
@@ -201,6 +207,32 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     }
 }
 
+void sc_screen_change_position_by_manual(struct sc_screen *screen, int xpos, int ypos) {
+    if(screen->window == NULL) return;
+
+    SDL_SetWindowPosition(screen->window, xpos, ypos);
+}
+
+
+static void
+sc_screen_update_content_rect(struct sc_screen *screen) {
+    assert(screen->video);
+
+    // if(screen->external_window_handle != 0) {
+    //     //Do not control the size by auto in external mode
+    //     return;
+    // }
+
+
+    int dw;
+    int dh;
+
+    SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
+    //LOGD("Drawable size: %dx%d", dw, dh);
+
+    sc_screen_update_content_rect_by_manual(screen, dw, dh);
+}
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
@@ -214,15 +246,29 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     enum sc_display_result res =
-        sc_display_render(&screen->display, &screen->rect, screen->orientation);
+        sc_display_render(&screen->display, &screen->rect, screen->orientation, screen->content_size, screen->eye_mode);
     (void) res; // any error already logged
 }
 
 static void
 sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
-        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0);
+        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0, screen->content_size, screen->eye_mode);
     (void) res; // any error already logged
+}
+
+
+void sc_screen_force_update_one_frame(struct sc_screen *screen) {
+    if(screen->video) {
+        sc_screen_render(screen, true);
+    }
+}
+
+
+void sc_screen_force_update_one_frame(struct sc_screen *screen) {
+    if(screen->video) {
+        sc_screen_render(screen, true);
+    }
 }
 
 #if defined(__APPLE__) || defined(_WIN32)
@@ -343,6 +389,9 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
+    screen->image_transmitter = params->image_transmitter;
+    screen->force_hide_window = params->hide_window;
+
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
         return false;
@@ -394,10 +443,37 @@ sc_screen_init(struct sc_screen *screen,
     }
 
     // The window will be positioned and sized on first video frame
-    screen->window = SDL_CreateWindow(title, x, y, width, height, window_flags);
+    if(params->external_window_handle != 0) {
+        LOGI("Create SDL Window by external mode.");
+        screen->is_external_window = true;
+        screen->external_window_handle = params->external_window_handle;
+        screen->window = SDL_CreateWindowFrom((void*)params->external_window_handle);
+        int tmpwidth;
+        int tmpheight;
+        SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
+
+        //LOGI("Create SDL Window by external mode. size is %d x %d .", tmpwidth, tmpheight);
+    } else {
+        LOGI("Create SDL Window by default mode.");
+        screen->is_external_window = false;
+        screen->external_window_handle = 0;
+        screen->window = SDL_CreateWindow(title, x, y, width, height, window_flags);        
+    }
+
+
     if (!screen->window) {
         LOGE("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;
+    } else {
+        int tmpwidth;
+        int tmpheight;
+        SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
+        LOGI("Create window suc. size is %d x %d .", tmpwidth, tmpheight);
+
+        if(params->hide_window) {
+            SDL_HideWindow(screen->window);
+            LOGI("Window been hide for scrcpy --hide-window!");
+        }
     }
 
     SDL_Surface *icon = scrcpy_icon_load();
@@ -415,7 +491,7 @@ sc_screen_init(struct sc_screen *screen,
     SDL_Surface *icon_novideo = params->video ? NULL : icon;
     bool mipmaps = params->video && params->mipmaps;
     ok = sc_display_init(&screen->display, screen->window, icon_novideo,
-                         mipmaps);
+                         mipmaps, screen->image_transmitter);
     if (icon) {
         scrcpy_icon_destroy(icon);
     }
@@ -506,7 +582,11 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
         sc_fps_counter_start(&screen->fps_counter);
     }
 
-    SDL_ShowWindow(screen->window);
+    if(!screen->force_hide_window) {
+        //force hide window do not need show window here
+        SDL_ShowWindow(screen->window);
+    }
+    
     sc_screen_update_content_rect(screen);
 }
 
@@ -613,6 +693,7 @@ sc_screen_init_size(struct sc_screen *screen) {
     struct sc_size content_size =
         get_oriented_size(screen->frame_size, screen->orientation);
     screen->content_size = content_size;
+    screen->eye_mode = SC_EYE_MODE_TWOEYES;
 
     enum sc_display_result res =
         sc_display_set_texture_size(&screen->display, screen->frame_size);
@@ -761,11 +842,21 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         return;
     }
 
+    // if(screen->external_window_handle != 0) {
+    //     return;
+    // }
+
+
     struct sc_point point = get_window_position(screen);
     struct sc_size window_size = get_window_size(screen);
 
     struct sc_size optimal_size =
         get_optimal_size(window_size, screen->content_size, false);
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        optimal_size.width /= 2;
+    }
 
     // Center the window related to the device screen
     assert(optimal_size.width <= window_size.width);
@@ -792,7 +883,17 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
         screen->maximized = false;
     }
 
+    // if(screen->external_window_handle != 0) {
+    //     return;
+    // }
+
     struct sc_size content_size = screen->content_size;
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        content_size.width /= 2;
+    }
+
     SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
@@ -835,6 +936,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    LOGI("scrcpy window resized");
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_MAXIMIZED:
@@ -844,6 +946,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     screen->minimized = true;
                     break;
                 case SDL_WINDOWEVENT_RESTORED:
+                    LOGI("scrcpy window restored");
                     if (screen->fullscreen) {
                         // On Windows, in maximized+fullscreen, disabling
                         // fullscreen mode unexpectedly triggers the "restored"
@@ -852,6 +955,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                         // not maximized visually).
                         break;
                     }
+                    LOGI("scrcpy window restored used");
                     screen->maximized = false;
                     screen->minimized = false;
                     apply_pending_resize(screen);
@@ -868,6 +972,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     }
 
     sc_input_manager_handle_event(&screen->im, event);
+    
     return true;
 }
 

@@ -48,6 +48,9 @@ struct sc_screen {
     } req;
 
     SDL_Window *window;
+    uint64_t external_window_handle;
+    bool is_external_window;
+
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 
@@ -69,6 +72,12 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    enum sc_eye_mode eye_mode;
+
+    struct sc_image_transmitter *image_transmitter;
+
+    bool force_hide_window;
 };
 
 struct sc_screen_params {
@@ -100,7 +109,15 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+
+    uint64_t external_window_handle;
+    uint16_t cli_service_port;
+
+    struct sc_image_transmitter* image_transmitter;
+    bool hide_window;
 };
+
+int sc_test_add(int a, int b);
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
@@ -170,5 +187,14 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
 // otherwise.
 void
 sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
+
+void sc_screen_force_update_one_frame(struct sc_screen *screen);
+
+
+void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, int dh);
+
+
+void sc_screen_change_position_by_manual(struct sc_screen *screen, int xpos, int ypos);
+
 
 #endif

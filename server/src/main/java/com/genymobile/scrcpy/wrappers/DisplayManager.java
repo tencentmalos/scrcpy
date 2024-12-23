@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.SpatialUtils;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;

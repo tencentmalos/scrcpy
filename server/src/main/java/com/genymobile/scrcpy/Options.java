@@ -38,6 +38,7 @@ public class Options {
     private float angle;
     private boolean tunnelForward;
     private Rect crop;
+    private Rect cropRegion2; // Added for second crop region
     private boolean control = true;
     private int displayId;
     private String cameraId;
@@ -288,6 +289,10 @@ public class Options {
         return sendCodecMeta;
     }
 
+    public Rect getCropRegion2() {
+        return cropRegion2;
+    }
+
     @SuppressWarnings("MethodLength")
     public static Options parse(String... args) {
         if (args.length < 1) {
@@ -379,6 +384,11 @@ public class Options {
                 case "crop":
                     if (!value.isEmpty()) {
                         options.crop = parseCrop(value);
+                    }
+                    break;
+                case "crop_region2":
+                    if (!value.isEmpty()) {
+                        options.cropRegion2 = parseCrop(value);
                     }
                     break;
                 case "control":

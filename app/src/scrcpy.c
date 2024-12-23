@@ -40,10 +40,17 @@
 #include "util/log.h"
 #include "util/rand.h"
 #include "util/timeout.h"
+#include "util/cmd_input.h"
 #include "util/tick.h"
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
+
+#include "net_cmd/net_cmd.h"
+#include "util/image_transmitter.h"
+#include "util/env.h"
+#include "util/work_dir.h"
+
 
 struct scrcpy {
     struct sc_server server;
@@ -89,7 +96,11 @@ struct scrcpy {
 #endif
     };
     struct sc_timeout timeout;
+    struct sc_image_transmitter image_transmitter;
 };
+
+struct scrcpy* g_used_scrcpy = NULL;
+
 
 #ifdef _WIN32
 static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
@@ -176,9 +187,56 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s, bool has_screen) {
+event_loop(struct scrcpy *s) {
+    int64_t last_check_work_time_ms = 0;
+    int64_t check_alive_period_ms = 1000;
+
+    //begin event loop, we just send start to work notify here
+    net_cmd_send_start_to_work();
+
     SDL_Event event;
-    while (SDL_WaitEvent(&event)) {
+    while (true) {
+        //call cmd input loop first
+        net_cmd_loop_once();
+        //sc_cmd_input_loop_once();
+
+        //netevent_loop_once(ne);
+
+        //Check if request to exit
+        if(s->screen.im.is_cmd_input_request_exit) {
+            return SCRCPY_EXIT_FAILURE;
+        }
+
+        //Check if external window is valid here
+        if(s->screen.is_external_window) {
+#ifdef _WIN32
+            if (!IsWindow((HWND)s->screen.external_window_handle)) {
+                LOGE("External Windows is destroyed, just exit scrcpy!");
+                return SCRCPY_EXIT_FAILURE;
+            }
+#endif
+        }
+
+
+        int result = SDL_WaitEventTimeout(&event, 10);
+        if(result == 0) {
+            //Time out here, just continue
+            if (!sc_screen_handle_event(&s->screen, &event)) {
+                return SCRCPY_EXIT_FAILURE;
+            }
+            continue;
+        }
+
+        ///* Some times SDL_WaitEventTimeout() may be return timeout always, 
+        ///* we need detect it when cli-tools worked
+
+        //notify cli-tools scrcpy is start to work here
+        int64_t now_time_ms = net_cmd_query_now_time_ms();
+        if(now_time_ms >= last_check_work_time_ms + check_alive_period_ms) {
+            net_cmd_send_check_alive();
+            last_check_work_time_ms = now_time_ms;
+        }
+
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
@@ -377,13 +435,79 @@ init_sdl_gamepads(void) {
     }
 }
 
+void sc_request_exit() {
+    if(g_used_scrcpy == NULL) return;
+
+    g_used_scrcpy->screen.im.is_cmd_input_request_exit = true;
+}
+
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
+
 #ifndef NDEBUG
     // Detect missing initializations
     memset(&scrcpy, 42, sizeof(scrcpy));
 #endif
+
+    g_used_scrcpy = &scrcpy;
+
+    //Env settings here
+    printf("init work dir is:%s \n", sc_query_work_directory());
+
+    //if(options->run_path != NULL) 
+    {
+        const char* work_directory = sc_query_work_directory();
+
+        const char* adb_path = sc_combine_path(work_directory, "adb");
+        printf("current adb dir is:%s \n", adb_path);
+
+        sc_set_env("ADB", adb_path, 1);
+
+        const char* scrcpy_server_path = sc_combine_path(work_directory, "scrcpy-server");
+        sc_set_env("SCRCPY_SERVER_PATH", scrcpy_server_path, 1);
+
+        const char* scrcpy_icon_path = sc_combine_path(work_directory, "icon.png");
+        sc_set_env("SCRCPY_ICON_PATH", scrcpy_icon_path, 1);
+    }
+
+    //begin to start network early here
+    //start command input thread here
+    // intialize net_cmd
+    if(options->cli_service_port != 0) {
+        LOGI("Try to initialize cli service in port:%d", (int)options->cli_service_port);
+        bool is_suc = net_cmd_init();
+        if (!is_suc) {
+            // error here
+            LOGE("Can not init netevent!");
+            sc_request_exit();
+        }
+        
+        // connect to cli-tools
+        if (net_cmd_connect("127.0.0.1", options->cli_service_port) < 0) {
+            // error here
+            LOGE("Can not connect to cli service with 127.0.0.1:%d!", (int)options->cli_service_port);
+            sc_request_exit();
+        }
+        
+        //redirect log to network
+        net_cmd_redirect_log_to_network();
+        
+        char shm_name[64];
+        snprintf(shm_name, sizeof(shm_name), "scrcpy_frames_%d", (int)options->cli_service_port);
+        size_t max_frame_size = 8192 * 4096 * 4; // 8k*4k RGB32
+        
+        if (!sc_image_transmitter_init(&scrcpy.image_transmitter, shm_name, max_frame_size)) {
+            LOGE("Failed to initialize image transmitter");
+        } else {
+            LOGI("Image transmitter initialized successfully");
+        }
+    } else {
+        //Not use cli service mode here
+        ;
+    }
+
     struct scrcpy *s = &scrcpy;
 
     // Minimal SDL initialization
@@ -433,6 +557,7 @@ scrcpy(struct scrcpy_options *options) {
         .audio_source = options->audio_source,
         .camera_facing = options->camera_facing,
         .crop = options->crop,
+        .crop_region2 = options->crop_region2,
         .port_range = options->port_range,
         .tunnel_host = options->tunnel_host,
         .tunnel_port = options->tunnel_port,
@@ -824,6 +949,10 @@ aoa_complete:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .external_window_handle = options->external_window_handle,
+            .cli_service_port = options->cli_service_port,
+            .image_transmitter = &s->image_transmitter,
+            .hide_window = options->hide_window,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -944,9 +1073,36 @@ aoa_complete:
         }
     }
 
+
+    //sc_start_cmd_input_thread();
+
+    //BugFix: add here to let window always show here
+    //SDL_ShowWindow(s->screen.window);
+
+    //sc_screen_force_update_one_frame(&s->screen);
+
+
+    //start command input thread here
+    sc_start_cmd_input_thread();
+
+    //BugFix: add here to let window always show here
+    SDL_ShowWindow(s->screen.window);
+
     ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
+
+    //stop image transmitter here
+    if(s->image_transmitter.enabled) {
+        sc_image_transmitter_destroy(&s->image_transmitter);
+    }
+
+    //stop command input thread here
+    if(options->cli_service_port != 0) {
+        net_cmd_stop();
+        net_cmd_destroy();
+    }
+    //sc_stop_cmd_input_thread();
 
     if (options->video_playback) {
         // Close the window immediately on closing, because screen_destroy()

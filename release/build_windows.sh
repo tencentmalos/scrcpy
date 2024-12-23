@@ -21,25 +21,39 @@ cd .. # root project dir
 WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 
 app/deps/adb_windows.sh
-app/deps/sdl.sh $WINXX cross shared
+# app/deps/sdl.sh $WINXX cross shared
 app/deps/dav1d.sh $WINXX cross shared
-app/deps/ffmpeg.sh $WINXX cross shared
-app/deps/libusb.sh $WINXX cross shared
+# app/deps/ffmpeg.sh $WINXX cross shared
+# app/deps/libusb.sh $WINXX cross shared
 
 DEPS_INSTALL_DIR="$PWD/app/deps/work/install/$WINXX-cross-shared"
 ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-windows"
 
-rm -rf "$WINXX_BUILD_DIR"
+# rm -rf "$WINXX_BUILD_DIR"
+
 meson setup "$WINXX_BUILD_DIR" \
     --pkg-config-path="$DEPS_INSTALL_DIR/lib/pkgconfig" \
     -Dc_args="-I$DEPS_INSTALL_DIR/include" \
     -Dc_link_args="-L$DEPS_INSTALL_DIR/lib" \
     --cross-file=cross_$WINXX.txt \
     --buildtype=release \
-    --strip \
-    -Db_lto=true \
     -Dcompile_server=false \
     -Dportable=true
+
+    #--strip \
+    #-Db_lto=true \
+
+# meson setup "$WINXX_BUILD_DIR" \
+#     --pkg-config-path="$DEPS_INSTALL_DIR/lib/pkgconfig" \
+#     -Dc_args="-I$DEPS_INSTALL_DIR/include" \
+#     -Dc_link_args="-L$DEPS_INSTALL_DIR/lib" \
+#     --cross-file=cross_$WINXX.txt \
+#     --buildtype=debug \
+#     -Db_lto=false \
+#     -Dcompile_server=false \
+#     -Dportable=true
+
+
 ninja -C "$WINXX_BUILD_DIR"
 
 # Group intermediate outputs into a 'dist' directory
@@ -51,3 +65,10 @@ cp app/data/icon.png "$WINXX_BUILD_DIR/dist/"
 cp app/data/open_a_terminal_here.bat "$WINXX_BUILD_DIR/dist/"
 cp "$DEPS_INSTALL_DIR"/bin/*.dll "$WINXX_BUILD_DIR/dist/"
 cp -r "$ADB_INSTALL_DIR"/. "$WINXX_BUILD_DIR/dist/"
+
+
+# copy to out test directory 
+#cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/"
+
+# copy to out test directory 
+cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/"

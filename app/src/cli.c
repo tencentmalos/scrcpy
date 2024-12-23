@@ -25,6 +25,7 @@ enum {
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
     OPT_CROP,
+    OPT_CROP_REGION2, // Added for second crop region
     OPT_RECORD_FORMAT,
     OPT_PREFER_TEXT,
     OPT_WINDOW_X,
@@ -105,6 +106,8 @@ enum {
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
+    OPT_EXTERNAL_WINDOW_HANDLE,
+    OPT_CLI_SERVICE_PORT,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
     OPT_START_APP,
@@ -114,6 +117,8 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_ENABLE_SHARED_IMAGE,
+    OPT_HIDE_WINDOW,
 };
 
 struct sc_option {
@@ -354,6 +359,12 @@ static const struct sc_option options[] = {
                 "(typically, portrait for a phone, landscape for a tablet).",
     },
     {
+        .longopt_id = OPT_CROP_REGION2,
+        .longopt = "crop-region2",
+        .argdesc = "width:height:x:y",
+        .text = "Crop a second region of the device screen on the server.",
+    },
+    {
         .shortopt = 'd',
         .longopt = "select-usb",
         .text = "Use USB device (if there is exactly one, like adb -d).\n"
@@ -453,6 +464,28 @@ static const struct sc_option options[] = {
                 "\"aoa\" simulates physical gamepads using the AOAv2 protocol."
                 "It may only work over USB.\n"
                 "Also see --keyboard and --mouse.",
+    },
+    {
+        .longopt_id = OPT_EXTERNAL_WINDOW_HANDLE,
+        .longopt = "external-window-handle",
+        .argdesc = "value",
+        .text = "create scrcpy in a external window.",
+    },
+    {
+        .longopt_id = OPT_CLI_SERVICE_PORT,
+        .longopt = "cli_service_port",
+        .argdesc = "value",
+        .text = "connect scrcpy to cli service by tcp port",
+    },
+    {
+        .longopt_id = OPT_ENABLE_SHARED_IMAGE,
+        .longopt = "enable_shared_image",
+        .text = "enable shared image mode",
+    },
+    {
+        .longopt_id = OPT_HIDE_WINDOW,
+        .longopt = "hide-window",
+        .text = "set the running path for find adb/server/icons here",
     },
     {
         .shortopt = 'h',
@@ -2380,6 +2413,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CROP:
                 opts->crop = optarg;
                 break;
+            case OPT_CROP_REGION2:
+                opts->crop_region2 = optarg;
+                LOGW("crop region2 params recieve:%s", optarg);
+                break;
             case OPT_DISPLAY:
                 LOGE("--display has been removed, use --display-id instead.");
                 return false;
@@ -2792,6 +2829,35 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_GAMEPAD:
                 if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
                     return false;
+                }
+                break;
+            case OPT_EXTERNAL_WINDOW_HANDLE:
+                {
+                    char *endptr;
+                    opts->external_window_handle = strtoull(optarg, &endptr, 10);
+                    LOGW("external-window-handle=%llu", opts->external_window_handle);
+                }
+                break;
+            case OPT_CLI_SERVICE_PORT:
+                {
+                    char *endptr;
+                    opts->cli_service_port =  (uint16_t)strtoul(optarg, &endptr, 10);
+                    LOGW("cli_service_port=%d", (int)opts->cli_service_port);
+
+                    opts->start_fps_counter = true;
+                    LOGW("fps counter auto start by cli mode.");
+                }
+                break;
+            case OPT_ENABLE_SHARED_IMAGE:
+                {
+                    opts->enable_shared_image = true;
+                    LOGW("now shared image mode is enabled.");
+                }
+                break;
+            case OPT_HIDE_WINDOW:
+                {
+                    opts->hide_window = true;
+                    LOGW("hide window enabled.");
                 }
                 break;
             case OPT_NEW_DISPLAY:

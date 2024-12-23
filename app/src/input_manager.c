@@ -11,6 +11,162 @@
 #include "screen.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
+//#include "util/cmd_input.h"
+#include "util/capture_screen.h"
+#include "screen.h"
+#include "net_cmd/net_cmd.h"
+
+
+// Input command callbacks here
+static void input_cmd_callback_change_eye_mode(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    if(strcmp(extra, "left") == 0) {
+        //left eye
+        im->screen->eye_mode = SC_EYE_MODE_LEFT;
+    } else if(strcmp(extra, "right") == 0) {
+        im->screen->eye_mode = SC_EYE_MODE_RIGHT;
+    } else {
+        im->screen->eye_mode = SC_EYE_MODE_TWOEYES;
+    }
+
+    //update one frame here
+    sc_screen_force_update_one_frame(im->screen);
+}
+
+static void input_cmd_callback_exit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    im->is_cmd_input_request_exit = true;
+    LOGD("Command request to exit now.");
+    net_cmd_stop();
+}
+
+static void input_cmd_callback_force_kill(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    im->is_cmd_input_request_exit = true;
+    LOGD("Command request to forece_kill now.");
+    exit(-1);
+}
+
+static void input_cmd_callback_save_screen(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    int ret = sc_save_screen_shot(extra, im->screen->display.renderer);
+    net_cmd_set_last_result(req_id, (uint8_t)(ret == 0), cmd, "");
+}
+
+static void input_cmd_callback_resize_to_1_1(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    
+    if(im->screen->fullscreen) {
+        //quit the fullscreen state first
+        sc_screen_toggle_fullscreen(im->screen);
+    }
+    
+    sc_screen_resize_to_pixel_perfect(im->screen);
+}
+
+static void input_cmd_callback_resize_to_fit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    if(im->screen->fullscreen) {
+        //quit the fullscreen state first
+        sc_screen_toggle_fullscreen(im->screen);
+    }
+
+    sc_screen_resize_to_fit(im->screen);
+}
+
+static void input_cmd_callback_fullscreen(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    sc_screen_toggle_fullscreen(im->screen);
+}
+
+static void input_cmd_callback_resize_manual(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    int dw = 800;
+    int dh = 600;
+
+    const char* delim = ",";
+    char* token = strtok((char*)extra, delim);
+
+    int tmpcount = 0;
+
+    while (token != NULL)
+    {
+        if(tmpcount == 0) {
+            dw = atoi(token);
+        } else if(tmpcount == 1){
+            dh = atoi(token);
+        } else {
+            //do not need now
+            break;
+        }
+
+        token = strtok(NULL, delim);
+        tmpcount++;
+    }
+    
+    LOGD("resize_manual to %dx%d", dw, dh);
+
+    SDL_SetWindowSize(im->screen->window, dw, dh);
+    sc_screen_update_content_rect_by_manual(im->screen, dw, dh);
+    
+    LOGD("resize execute finished!");
+}
+
+static void input_cmd_callback_change_position_manual(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    int posx = 0;
+    int posy = 0;
+
+    const char* delim = ",";
+    char* token = strtok((char*)extra, delim);
+
+    int tmpcount = 0;
+
+    while (token != NULL)
+    {
+        if(tmpcount == 0) {
+            posx = atoi(token);
+        } else if(tmpcount == 1){
+            posy = atoi(token);
+        } else {
+            //do not need now
+            break;
+        }
+
+        token = strtok(NULL, delim);
+        tmpcount++;
+    }
+    
+    LOGD("change_position_manual to %dx%d", posx, posy);
+    
+    sc_screen_change_position_by_manual(im->screen, posx, posy);
+
+    LOGD("change position execute finished!");
+}
+
+static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    SDL_RaiseWindow(im->screen->window);
+    //SDL_SetWindowAlwaysOnTop(im->screen->window, SDL_TRUE);
+
+    LOGD("raise_window called finished!");
+}
+
+static void input_cmd_callback_frame_comsumed(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    int consume_index = atoi(extra);
+    im->screen->image_transmitter->now_consume_frame = consume_index;
+}
+
+static void input_cmd_callback_enable_image_transmit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    im->screen->image_transmitter->enabled = true;
+}
+
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -46,6 +202,22 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->key_repeat = 0;
 
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
+
+    im->is_cmd_input_request_exit = false;
+
+    //Register input command callbacks
+    net_cmd_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im, false);
+    net_cmd_register_command("exit", input_cmd_callback_exit, im, false);
+    net_cmd_register_command("force_kill", input_cmd_callback_force_kill, im, false);
+    net_cmd_register_command("save_screen", input_cmd_callback_save_screen, im, true);
+    net_cmd_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im, false);
+    net_cmd_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im, false);
+    net_cmd_register_command("fullscreen", input_cmd_callback_fullscreen, im, false);
+    net_cmd_register_command("resize_manual", input_cmd_callback_resize_manual, im, false);
+    net_cmd_register_command("change_position_manual", input_cmd_callback_change_position_manual, im, false);
+    net_cmd_register_command("raise_window", input_cmd_callback_raise_window, im, false);
+    net_cmd_register_command("frame_comsumed", input_cmd_callback_frame_comsumed, im, false);
+    net_cmd_register_command("enable_image_transmit", input_cmd_callback_enable_image_transmit, im, false);
 }
 
 static void
@@ -1015,6 +1187,8 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
+
+
     bool control = im->controller;
     bool paused = im->screen->paused;
     switch (event->type) {

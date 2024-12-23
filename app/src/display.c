@@ -5,7 +5,10 @@
 #include <string.h>
 #include <libavutil/pixfmt.h>
 
+#include "util/image_transmitter.h"
+
 #include "util/log.h"
+
 
 static bool
 sc_display_init_novideo_icon(struct sc_display *display,
@@ -30,7 +33,8 @@ sc_display_init_novideo_icon(struct sc_display *display,
 
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
-                SDL_Surface *icon_novideo, bool mipmaps) {
+                SDL_Surface *icon_novideo, bool mipmaps,
+                struct sc_image_transmitter* image_transmitter) {
     display->renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!display->renderer) {
@@ -44,6 +48,8 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
     display->mipmaps = false;
+
+    display->image_transmitter = image_transmitter;
 
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     display->gl_context = NULL;
@@ -293,14 +299,14 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
         }
 
         return SC_DISPLAY_RESULT_PENDING;
-    }
+    } 
 
     return SC_DISPLAY_RESULT_OK;
 }
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation) {
+                  enum sc_orientation orientation, struct sc_size content_size, enum sc_eye_mode eye_mode) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -314,7 +320,26 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     SDL_Texture *texture = display->texture;
 
     if (orientation == SC_ORIENTATION_0) {
-        int ret = SDL_RenderCopy(renderer, texture, NULL, geometry);
+        SDL_Rect srcrect;
+        srcrect.x = 0;
+        srcrect.y = 0;
+        SDL_QueryTexture(texture, NULL, NULL, &(srcrect.w), &(srcrect.h));
+        SDL_Rect dstrect = *geometry;
+
+        switch (eye_mode) {
+            case SC_EYE_MODE_LEFT: {
+                srcrect.w /= 2;
+            } break;
+            case SC_EYE_MODE_RIGHT: {
+                srcrect.w /= 2;
+                srcrect.x += srcrect.w;
+            } break;
+        default:
+            //two eyes, do nothing
+            break;
+        }
+
+        int ret = SDL_RenderCopy(renderer, texture, &srcrect, &dstrect);
         if (ret) {
             LOGE("Could not render texture: %s", SDL_GetError());
             return SC_DISPLAY_RESULT_ERROR;
@@ -347,5 +372,21 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     }
 
     SDL_RenderPresent(display->renderer);
+
+    
+    bool frame_been_consumed = (display->image_transmitter->frame_sequence == display->image_transmitter->now_consume_frame);
+    bool is_over_time = false;
+    int64_t now_time_ms = net_cmd_query_now_time_ms();
+    // if(now_time_ms >= display->image_transmitter->last_send_time_ms + 1000){
+    //     is_over_time = true;
+    //     display->image_transmitter->last_send_time_ms = now_time_ms;
+    // }
+
+    if(display->image_transmitter->enabled && (frame_been_consumed || is_over_time)) 
+    {
+        //Do image shared here
+        sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
+    }
+
     return SC_DISPLAY_RESULT_OK;
 }

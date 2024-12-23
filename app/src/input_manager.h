@@ -44,6 +44,8 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+
+    bool is_cmd_input_request_exit; //use for command input request exit
 };
 
 struct sc_input_manager_params {
