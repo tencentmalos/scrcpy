@@ -73,7 +73,7 @@ make -j
 # There is no "make install-strip"
 make install
 # Strip manually
-if [[ "$LINK_TYPE" == shared && "$HOST" == win* ]]
-then
-    ${HOST_TRIPLET}-strip "$INSTALL_DIR/$DIRNAME/bin/SDL2.dll"
-fi
+#if [[ "$LINK_TYPE" == shared && "$HOST" == win* ]]
+#then
+#    ${HOST_TRIPLET}-strip "$INSTALL_DIR/$DIRNAME/bin/SDL2.dll"
+#fi
