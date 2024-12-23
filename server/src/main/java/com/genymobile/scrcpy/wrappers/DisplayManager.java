@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.SpatialUtils;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -116,6 +117,13 @@ public final class DisplayManager {
 
     public DisplayInfo getDisplayInfo(int displayId) {
         try {
+            //Handle sparrow here
+            if(SpatialUtils.isPicoDevice()) {
+                // fallback when displayInfo is null
+                Ln.i("Fallback to getDisplayInfoFromDumpsysDisplay() for pico!");
+                return getDisplayInfoFromDumpsysDisplay(displayId);
+            }
+
             Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
             if (displayInfo == null) {
                 // fallback when displayInfo is null

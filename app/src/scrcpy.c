@@ -811,6 +811,7 @@ aoa_complete:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .external_window_handle = options->external_window_handle,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
