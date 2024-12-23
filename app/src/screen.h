@@ -100,6 +100,8 @@ struct sc_screen_params {
     bool start_fps_counter;
 };
 
+int sc_test_add(int a, int b);
+
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
 sc_screen_init(struct sc_screen *screen, const struct sc_screen_params *params);
