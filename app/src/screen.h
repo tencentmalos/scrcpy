@@ -100,6 +100,8 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+
+    uint64_t external_window_handle;
 };
 
 int sc_test_add(int a, int b);

@@ -399,7 +399,15 @@ sc_screen_init(struct sc_screen *screen,
     }
 
     // The window will be positioned and sized on first video frame
-    screen->window = SDL_CreateWindow(title, x, y, width, height, window_flags);
+    if(params->external_window_handle != 0) {
+        LOGI("Create SDL Window by external mode.");
+        screen->window = SDL_CreateWindowFrom((void*)params->external_window_handle);
+    } else {
+        LOGI("Create SDL Window by default mode.");
+        screen->window = SDL_CreateWindow(title, x, y, width, height, window_flags);        
+    }
+
+
     if (!screen->window) {
         LOGE("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;

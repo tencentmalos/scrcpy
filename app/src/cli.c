@@ -105,6 +105,7 @@ enum {
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
+    OPT_EXTERNAL_WINDOW_HANDLE,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
     OPT_START_APP,
@@ -453,6 +454,12 @@ static const struct sc_option options[] = {
                 "\"aoa\" simulates physical gamepads using the AOAv2 protocol."
                 "It may only work over USB.\n"
                 "Also see --keyboard and --mouse.",
+    },
+    {
+        .longopt_id = OPT_EXTERNAL_WINDOW_HANDLE,
+        .longopt = "external-window-handle",
+        .argdesc = "value",
+        .text = "create scrcpy in a external window.",
     },
     {
         .shortopt = 'h',
@@ -2792,6 +2799,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_GAMEPAD:
                 if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
                     return false;
+                }
+                break;
+            case OPT_EXTERNAL_WINDOW_HANDLE:
+                {
+                    char *endptr;
+                    opts->external_window_handle = strtoull(optarg, &endptr, 10);
+                    LOGW("external-window-handle=%llu", opts->external_window_handle);
                 }
                 break;
             case OPT_NEW_DISPLAY:
