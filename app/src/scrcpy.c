@@ -40,6 +40,8 @@
 #include "util/net.h"
 #include "util/rand.h"
 #include "util/timeout.h"
+#include "util/cmd_input.h"
+
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -166,7 +168,27 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
     SDL_Event event;
-    while (SDL_WaitEvent(&event)) {
+    while (true) {
+        //Check if external window is valid here
+        if(s->screen.is_external_window) {
+#ifdef _WIN32
+            if (!IsWindow((HWND)s->screen.external_window_handle)) {
+                LOGE("External Windows is destroyed, just exit scrcpy!");
+                return SCRCPY_EXIT_FAILURE;
+            }
+#endif
+        }
+
+
+        int result = SDL_WaitEventTimeout(&event, 10);
+        if(result == 0) {
+            //Time out here, just continue
+            if (!sc_screen_handle_event(&s->screen, &event)) {
+                return SCRCPY_EXIT_FAILURE;
+            }
+            continue;
+        }
+
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
@@ -932,9 +954,18 @@ aoa_complete:
         }
     }
 
+    //start command input thread here
+    sc_start_cmd_input_thread();
+
+    //BugFix: add here to let window always show here
+    SDL_ShowWindow(s->screen.window);
+
     ret = event_loop(s);
     terminate_event_loop();
     LOGD("quit...");
+
+    //stop command input thread here
+    sc_stop_cmd_input_thread();
 
     if (options->video_playback) {
         // Close the window immediately on closing, because screen_destroy()

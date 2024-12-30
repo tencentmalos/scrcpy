@@ -19,6 +19,7 @@
 #include "util/thread.h"
 #include "version.h"
 
+
 #ifdef _WIN32
 #include <windows.h>
 #include "util/str.h"

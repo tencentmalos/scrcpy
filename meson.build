@@ -1,4 +1,5 @@
-project('scrcpy', 'c',
+project('scrcpy', 
+        ['c','cpp'],
         version: '3.1',
         meson_version: '>= 0.48',
         default_options: [

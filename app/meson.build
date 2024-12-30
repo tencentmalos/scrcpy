@@ -63,6 +63,7 @@ src = [
     'src/util/thread.c',
     'src/util/tick.c',
     'src/util/timeout.c',
+    'src/util/cmd_input.cpp',
 ]
 
 conf = configuration_data()

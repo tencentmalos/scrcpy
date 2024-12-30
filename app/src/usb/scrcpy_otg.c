@@ -202,8 +202,16 @@ scrcpy_otg(struct scrcpy_options *options) {
     sc_usb_device_destroy(&usb_device);
     usb_device_initialized = false;
 
+    // Do not support cmd input in otg mode
+    // start command input thread here
+    // sc_start_cmd_input_thread();
+
     ret = event_loop(s);
     LOGD("quit...");
+
+    // Do not support cmd input in otg mode
+    // stop command input thread here
+    // sc_stop_cmd_input_thread();
 
 end:
     if (aoa_started) {

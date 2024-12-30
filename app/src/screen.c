@@ -401,9 +401,18 @@ sc_screen_init(struct sc_screen *screen,
     // The window will be positioned and sized on first video frame
     if(params->external_window_handle != 0) {
         LOGI("Create SDL Window by external mode.");
+        screen->is_external_window = true;
+        screen->external_window_handle = params->external_window_handle;
         screen->window = SDL_CreateWindowFrom((void*)params->external_window_handle);
+        int tmpwidth;
+        int tmpheight;
+        SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
+
+        //LOGI("Create SDL Window by external mode. size is %d x %d .", tmpwidth, tmpheight);
     } else {
         LOGI("Create SDL Window by default mode.");
+        screen->is_external_window = false;
+        screen->external_window_handle = 0;
         screen->window = SDL_CreateWindow(title, x, y, width, height, window_flags);        
     }
 
@@ -411,6 +420,11 @@ sc_screen_init(struct sc_screen *screen,
     if (!screen->window) {
         LOGE("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;
+    } else {
+        int tmpwidth;
+        int tmpheight;
+        SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
+        LOGI("Create window suc. size is %d x %d .", tmpwidth, tmpheight);
     }
 
     SDL_Surface *icon = scrcpy_icon_load();
