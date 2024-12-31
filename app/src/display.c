@@ -291,7 +291,7 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation) {
+                  enum sc_orientation orientation, struct sc_size content_size, enum sc_eye_mode eye_mode) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -305,7 +305,26 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     SDL_Texture *texture = display->texture;
 
     if (orientation == SC_ORIENTATION_0) {
-        int ret = SDL_RenderCopy(renderer, texture, NULL, geometry);
+        SDL_Rect srcrect;
+        srcrect.x = 0;
+        srcrect.y = 0;
+        SDL_QueryTexture(texture, NULL, NULL, &(srcrect.w), &(srcrect.h));
+        SDL_Rect dstrect = *geometry;
+
+        switch (eye_mode) {
+            case SC_EYE_MODE_LEFT: {
+                srcrect.w /= 2;
+            } break;
+            case SC_EYE_MODE_RIGHT: {
+                srcrect.w /= 2;
+                srcrect.x += srcrect.w;
+            } break;
+        default:
+            //two eyes, do nothing
+            break;
+        }
+
+        int ret = SDL_RenderCopy(renderer, texture, &srcrect, &dstrect);
         if (ret) {
             LOGE("Could not render texture: %s", SDL_GetError());
             return SC_DISPLAY_RESULT_ERROR;
