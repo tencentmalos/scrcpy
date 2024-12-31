@@ -12,13 +12,15 @@
 #include <memory>
 
 
+extern "C" {
+#include "util/log.h"
+}
+
+
 static std::atomic<bool> g_running{true};
 static std::shared_ptr<std::thread> g_cmd_input_thread;
 
-
-using CommandFn = std::function<void(const std::vector<std::string>&)>;
-
-std::map<std::string, CommandFn> gCommands;
+static std::map<std::string, input_command_callback> g_input_command_map;
 
 
 void console_input_thread() {
@@ -36,32 +38,41 @@ void console_input_thread() {
             continue;
         }
 
+        // Use istringstream to parse the string
         std::istringstream iss(line);
-        std::vector<std::string> tokens;
-        std::string token;
-        while (iss >> token) {
-            tokens.push_back(token);
+
+        // part1 is extracted by operator>>
+        std::string part1;
+        iss >> part1; 
+
+        // The rest of the string will be extracted by getline
+        std::string part2;
+        std::getline(iss, part2);
+
+        // Remove leading spaces/tabs in part2
+        if (!part2.empty()) {
+            size_t start_pos = part2.find_first_not_of(" \t");
+            if (start_pos != std::string::npos) {
+                part2 = part2.substr(start_pos);
+            } else {
+                part2.clear();
+            }
         }
 
-        const std::string& cmdName = tokens[0];
-        std::vector<std::string> cmdArgs;
-        if (tokens.size() > 1) {
-            cmdArgs.assign(tokens.begin() + 1, tokens.end());
-        }
+        std::string cmdname = part1;
+        std::string extras = part2;
 
-        auto it = gCommands.find(cmdName);
-        if (it != gCommands.end()) {
-            it->second(cmdArgs);
+        auto it = g_input_command_map.find(cmdname);
+        if (it != g_input_command_map.end()) {
+            it->second(part2.c_str());
         } else {
-            std::cout << "[Error] Unknown command: " << cmdName << std::endl;
+            LOGE("Unknown command: %s, extra: %s", cmdname.c_str(), extras.c_str());
         }
     }
 }
 
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 void sc_start_cmd_input_thread() {
     g_cmd_input_thread = std::make_shared<std::thread>(console_input_thread);
@@ -70,16 +81,24 @@ void sc_start_cmd_input_thread() {
 void sc_stop_cmd_input_thread() {
     if(g_cmd_input_thread) {
          g_running = false;
-        if (g_cmd_input_thread->joinable()) {
-            g_cmd_input_thread->join();
-        }
+        // if (g_cmd_input_thread->joinable()) {
+        //     g_cmd_input_thread->join();
+        // }
         g_cmd_input_thread.reset();
     }
 }
 
-#ifdef __cplusplus
+void sc_cmd_input_register_command(const char* name, input_command_callback callback) {
+    //ToDo: add implement here
+    std::string cmdname = name;
+    LOGI("input command: %s registered!", name);
+
+    g_input_command_map[cmdname] = callback;
 }
-#endif
+
+
+}
+
 
 
 

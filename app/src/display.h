@@ -44,6 +44,12 @@ enum sc_display_result {
     SC_DISPLAY_RESULT_ERROR,
 };
 
+enum sc_eye_mode {
+    SC_EYE_MODE_TWOEYES = 0,
+    SC_EYE_MODE_LEFT = 1, 
+    SC_EYE_MODE_RIGHT = 2,
+};
+
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
                 SDL_Surface *icon_novideo, bool mipmaps);
@@ -59,6 +65,6 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation);
+                  enum sc_orientation orientation, struct sc_size content_size, enum sc_eye_mode eye_mode);
 
 #endif

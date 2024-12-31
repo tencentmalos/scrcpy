@@ -72,6 +72,8 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    enum sc_eye_mode eye_mode;
 };
 
 struct sc_screen_params {

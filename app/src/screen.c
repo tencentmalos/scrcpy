@@ -176,6 +176,12 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     LOGI("Drawable size: %dx%d", dw, dh);
 
     struct sc_size content_size = screen->content_size;
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        content_size.width /= 2;
+    }
+
     // The drawable size is the window size * the HiDPI scale
     struct sc_size drawable_size = {dw, dh};
 
@@ -219,14 +225,14 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     enum sc_display_result res =
-        sc_display_render(&screen->display, &screen->rect, screen->orientation);
+        sc_display_render(&screen->display, &screen->rect, screen->orientation, screen->content_size, screen->eye_mode);
     (void) res; // any error already logged
 }
 
 static void
 sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
-        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0);
+        sc_display_render(&screen->display, NULL, SC_ORIENTATION_0, screen->content_size, screen->eye_mode);
     (void) res; // any error already logged
 }
 
@@ -640,6 +646,7 @@ sc_screen_init_size(struct sc_screen *screen) {
     struct sc_size content_size =
         get_oriented_size(screen->frame_size, screen->orientation);
     screen->content_size = content_size;
+    screen->eye_mode = SC_EYE_MODE_LEFT;
 
     enum sc_display_result res =
         sc_display_set_texture_size(&screen->display, screen->frame_size);
