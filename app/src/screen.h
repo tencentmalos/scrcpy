@@ -178,4 +178,6 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
 void
 sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
 
+void sc_screen_force_update_one_frame(struct sc_screen *screen);
+
 #endif

@@ -169,6 +169,11 @@ static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (true) {
+        //Check if request to exit
+        if(s->screen.im.is_cmd_input_request_exit) {
+            return SCRCPY_EXIT_FAILURE;
+        }
+
         //Check if external window is valid here
         if(s->screen.is_external_window) {
 #ifdef _WIN32
