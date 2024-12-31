@@ -7,6 +7,31 @@
 #include "screen.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
+#include "util/cmd_input.h"
+#include "screen.h"
+
+// Input command callbacks here
+static void input_cmd_callback_change_eye_mode(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    if(strcmp(extra, "left") == 0) {
+        //left eye
+        im->screen->eye_mode = SC_EYE_MODE_LEFT;
+    } else if(strcmp(extra, "right") == 0) {
+        im->screen->eye_mode = SC_EYE_MODE_RIGHT;
+    } else {
+        im->screen->eye_mode = SC_EYE_MODE_TWOEYES;
+    }
+
+    //update one frame here
+    sc_screen_force_update_one_frame(im->screen);
+}
+
+static void input_cmd_callback_exit(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    im->is_cmd_input_request_exit = true;
+    LOGI("Command request to exit now.");
+}
+
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -42,6 +67,12 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->key_repeat = 0;
 
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
+
+    im->is_cmd_input_request_exit = false;
+
+    //Register input command callbacks
+    sc_cmd_input_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
+    sc_cmd_input_register_command("exit", input_cmd_callback_exit, im);
 }
 
 static void
@@ -1009,6 +1040,9 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
+    //call cmd input loop first
+    sc_cmd_input_loop_once();
+
     bool control = im->controller;
     bool paused = im->screen->paused;
     switch (event->type) {

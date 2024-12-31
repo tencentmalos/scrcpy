@@ -236,6 +236,13 @@ sc_screen_render_novideo(struct sc_screen *screen) {
     (void) res; // any error already logged
 }
 
+
+void sc_screen_force_update_one_frame(struct sc_screen *screen) {
+    if(screen->video) {
+        sc_screen_render(screen, true);
+    }
+}
+
 #if defined(__APPLE__) || defined(__WINDOWS__)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
@@ -905,6 +912,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     }
 
     sc_input_manager_handle_event(&screen->im, event);
+    
     return true;
 }
 
