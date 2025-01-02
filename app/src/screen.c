@@ -173,7 +173,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     int dw;
     int dh;
     SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
-    LOGI("Drawable size: %dx%d", dw, dh);
+    //LOGI("Drawable size: %dx%d", dw, dh);
 
     struct sc_size content_size = screen->content_size;
 

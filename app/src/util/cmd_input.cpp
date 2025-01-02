@@ -42,6 +42,10 @@ static std::map<std::string, input_command_info> g_input_command_map;
 static std::mutex g_input_mutex;
 static std::vector<std::string> g_cached_inputs;
 
+static bool g_input_command_is_suc;
+static std::string g_input_command_result_string;
+
+
 #ifdef _WIN32
 
 static OVERLAPPED g_ol = {};
@@ -249,61 +253,35 @@ void sc_cmd_input_loop_once() {
         std::string cmdname = part1;
         std::string extras = part2;
 
+        LOGI("> %s %s", cmdname.c_str(), extras.c_str());
+
         auto it = g_input_command_map.find(cmdname);
         if (it != g_input_command_map.end()) {
+            
+            sc_cmd_set_result(true, "");        //default is suc here
+            g_input_command_result_string = "";
             it->second.callback(part2.c_str(), it->second.userdata);
-            LOGI("> %s %s", cmdname.c_str(), extras.c_str());
+            
+            LOGI("icmd-%s-%d: %s", cmdname.c_str(), (int)g_input_command_is_suc, g_input_command_result_string.c_str());
         } else {
-            LOGE("Unknown command: %s, extra: %s", cmdname.c_str(), extras.c_str());
+            LOGI("icmd-unknown-0: %s %s", cmdname.c_str(), extras.c_str());
         }
     }
 }
 
+void sc_cmd_set_result(bool is_suc, const char* result_info) {
+    g_input_command_is_suc = is_suc;
+    if(result_info == NULL) {
+        g_input_command_result_string = "";
+    } else {
+        g_input_command_result_string = result_info;
+    }
+}
+
+
 
 }
 
 
 
-
-
-// int main() {
-//     // 注册一些命令 (示例)
-//     gCommands["enable_feature"] = [](const std::vector<std::string>& args){
-//         std::cout << "[CMD] enable_feature called.\n";
-//         // 在这里实现真正启用功能的逻辑...
-//     };
-
-//     gCommands["disable_feature"] = [](const std::vector<std::string>& args){
-//         std::cout << "[CMD] disable_feature called.\n";
-//     };
-
-//     gCommands["quit"] = [](const std::vector<std::string>& args){
-//         std::cout << "[CMD] quit called. Exiting.\n";
-//         gRunning = false;  // 让输入线程循环退出
-//     };
-
-//     // 启动子线程, 用于处理控制台输入
-//     std::thread t(consoleInputThread);
-
-//     // 主线程做点别的事 (模拟), 这里是个循环倒计时
-//     for (int i = 5; i > 0; --i) {
-//         std::cout << "[Main Thread] Doing work... (" << i << ")\n";
-//         std::this_thread::sleep_for(std::chrono::seconds(1));
-//         if (!gRunning) {
-//             break; // 如果输入线程提前让gRunning=false, 主线程可提前结束
-//         }
-//     }
-
-//     // 如果主线程决定结束程序, 可以把gRunning=false
-//     std::cout << "[Main Thread] Setting gRunning=false, joining input thread...\n";
-//     gRunning = false;
-
-//     // 等待输入线程结束
-//     if (t.joinable()) {
-//         t.join();
-//     }
-
-//     std::cout << "Program exiting.\n";
-//     return 0;
-// }
 
