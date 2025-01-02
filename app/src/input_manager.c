@@ -8,6 +8,7 @@
 #include "shortcut_mod.h"
 #include "util/log.h"
 #include "util/cmd_input.h"
+#include "util/capture_screen.h"
 #include "screen.h"
 
 // Input command callbacks here
@@ -32,6 +33,10 @@ static void input_cmd_callback_exit(const char* extra, void* userdata) {
     LOGI("Command request to exit now.");
 }
 
+static void input_cmd_callback_save_screen(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    sc_save_screen_shot(extra, im->screen->display.renderer);
+}
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -73,6 +78,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     //Register input command callbacks
     sc_cmd_input_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
     sc_cmd_input_register_command("exit", input_cmd_callback_exit, im);
+    sc_cmd_input_register_command("save_screen", input_cmd_callback_save_screen, im);
 }
 
 static void

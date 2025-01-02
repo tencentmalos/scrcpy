@@ -64,6 +64,7 @@ src = [
     'src/util/tick.c',
     'src/util/timeout.c',
     'src/util/cmd_input.cpp',
+    'src/util/capture_screen.cpp',
 ]
 
 conf = configuration_data()
