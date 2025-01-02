@@ -9,3 +9,4 @@ build/
 local.properties
 /scrcpy-server
 .vscode/c_cpp_properties.json
+.DS_Store

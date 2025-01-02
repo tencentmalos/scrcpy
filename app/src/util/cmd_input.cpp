@@ -26,7 +26,8 @@ extern "C" {
 }
 
 
-static std::atomic<bool> g_running{true};
+//static std::atomic<bool> g_running = true;
+static bool g_running = true;
 static std::shared_ptr<std::thread> g_cmd_input_thread;
 
 struct input_command_info {
@@ -213,7 +214,7 @@ void sc_cmd_input_register_command(const char* name, input_command_callback call
     info.callback = callback;
     info.userdata = userdata;
 
-    g_input_command_map.emplace(std::make_pair(cmdname, info));
+    g_input_command_map.insert(std::make_pair(cmdname, info));
 }
 
 void sc_cmd_input_loop_once() {
