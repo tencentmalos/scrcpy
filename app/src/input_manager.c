@@ -35,7 +35,8 @@ static void input_cmd_callback_exit(const char* extra, void* userdata) {
 
 static void input_cmd_callback_save_screen(const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
-    sc_save_screen_shot(extra, im->screen->display.renderer);
+    int ret = sc_save_screen_shot(extra, im->screen->display.renderer);
+    sc_cmd_set_result(ret == 0, "");
 }
 
 void
