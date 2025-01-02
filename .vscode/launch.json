@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "scrcpy MSYS2 debug",
+            "name": "MSYS2 debugger",
             "type": "cppdbg",
             "request": "launch",
             "program": "D:/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/scrcpy.exe",
@@ -21,6 +21,23 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb"
+        },
+        {
+            "name": "macos debugger",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/scrcpy",
+            //"program": "${workspaceFolder}/release/work/build-win64/dist/scrcpy.exe",
+            "args": [
+                "--max-size=1920",
+                "--external-window-handle=6139597248", 
+                "--no-audio"
+                ],
+            "cwd": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0",
+            //"preLaunchTask": "build", 
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
         }
     ]
 }
