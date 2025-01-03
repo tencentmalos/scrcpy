@@ -27,7 +27,7 @@ static bool save_screen_shot_impl(const char* filename, SDL_Renderer* renderer) 
     int read_ret =SDL_RenderReadPixels(renderer,
                              nullptr,  // entire screen
                         #ifdef _WIN32
-                             SDL_PIXELFORMAT_ARGB8888,
+                             SDL_PIXELFORMAT_ABGR8888,
                         #else 
                              SDL_PIXELFORMAT_RGBA8888,
                         #endif
