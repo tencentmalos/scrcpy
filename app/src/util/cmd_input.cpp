@@ -192,6 +192,7 @@ void console_input_thread() {
 extern "C" {
 
 void sc_start_cmd_input_thread() {
+    //std::this_thread::sleep_for(std::chrono::milliseconds(5000));
     g_cmd_input_thread = std::make_shared<std::thread>(console_input_thread);
 }
 

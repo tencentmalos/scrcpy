@@ -166,14 +166,9 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
     return screen->im.mp && screen->im.mp->relative_mode;
 }
 
-static void
-sc_screen_update_content_rect(struct sc_screen *screen) {
-    assert(screen->video);
 
-    int dw;
-    int dh;
-    SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
-    //LOGI("Drawable size: %dx%d", dw, dh);
+void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, int dh) {
+    assert(screen->video);
 
     struct sc_size content_size = screen->content_size;
 
@@ -210,6 +205,26 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
                                        / content_size.height;
         rect->x = (drawable_size.width - rect->w) / 2;
     }
+}
+
+
+static void
+sc_screen_update_content_rect(struct sc_screen *screen) {
+    assert(screen->video);
+
+    if(screen->external_window_handle != 0) {
+        //Do not control the size by auto in external mode
+        return;
+    }
+
+
+    int dw;
+    int dh;
+
+    SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
+    LOGI("Drawable size: %dx%d", dw, dh);
+
+    sc_screen_update_content_rect_by_manual(screen, dw, dh);
 }
 
 // render the texture to the renderer
@@ -802,11 +817,21 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         return;
     }
 
+    // if(screen->external_window_handle != 0) {
+    //     return;
+    // }
+
+
     struct sc_point point = get_window_position(screen);
     struct sc_size window_size = get_window_size(screen);
 
     struct sc_size optimal_size =
         get_optimal_size(window_size, screen->content_size, false);
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        optimal_size.width /= 2;
+    }
 
     // Center the window related to the device screen
     assert(optimal_size.width <= window_size.width);
@@ -833,7 +858,17 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
         screen->maximized = false;
     }
 
+    // if(screen->external_window_handle != 0) {
+    //     return;
+    // }
+
     struct sc_size content_size = screen->content_size;
+
+    if(screen->eye_mode == SC_EYE_MODE_LEFT || screen->eye_mode == SC_EYE_MODE_RIGHT) {
+        //only one eye need here
+        content_size.width /= 2;
+    }
+
     SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
