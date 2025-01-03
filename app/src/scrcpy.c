@@ -964,7 +964,9 @@ aoa_complete:
     sc_start_cmd_input_thread();
 
     //BugFix: add here to let window always show here
-    SDL_ShowWindow(s->screen.window);
+    //SDL_ShowWindow(s->screen.window);
+
+    //sc_screen_force_update_one_frame(&s->screen);
 
     ret = event_loop(s);
     terminate_event_loop();
