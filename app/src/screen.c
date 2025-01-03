@@ -212,10 +212,10 @@ static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
     assert(screen->video);
 
-    if(screen->external_window_handle != 0) {
-        //Do not control the size by auto in external mode
-        return;
-    }
+    // if(screen->external_window_handle != 0) {
+    //     //Do not control the size by auto in external mode
+    //     return;
+    // }
 
 
     int dw;
