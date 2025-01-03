@@ -43,6 +43,66 @@ static void input_cmd_callback_save_screen(const char* extra, void* userdata) {
     sc_cmd_set_result(ret == 0, "");
 }
 
+static void input_cmd_callback_resize_to_1_1(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    
+    if(im->screen->fullscreen) {
+        //quit the fullscreen state first
+        sc_screen_toggle_fullscreen(im->screen);
+    }
+    
+    sc_screen_resize_to_pixel_perfect(im->screen);
+}
+
+static void input_cmd_callback_resize_to_fit(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    if(im->screen->fullscreen) {
+        //quit the fullscreen state first
+        sc_screen_toggle_fullscreen(im->screen);
+    }
+
+    sc_screen_resize_to_fit(im->screen);
+}
+
+static void input_cmd_callback_fullscreen(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    sc_screen_toggle_fullscreen(im->screen);
+}
+
+static void input_cmd_callback_resize_manual(const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    int dw = 800;
+    int dh = 600;
+
+    const char* delim = ",";
+    char* token = strtok((char*)extra, delim);
+
+    int tmpcount = 0;
+
+    while (token != NULL)
+    {
+        if(tmpcount == 0) {
+            dw = atoi(token);
+        } else if(tmpcount == 1){
+            dh = atoi(token);
+        } else {
+            //do not need now
+            break;
+        }
+
+        token = strtok(NULL, delim);
+        tmpcount++;
+    }
+    
+    LOGI("resize_manual to %dx%d", dw, dh);
+
+    SDL_SetWindowSize(im->screen->window, dw, dh);
+    sc_screen_update_content_rect_by_manual(im->screen, dw, dh);
+    LOGI("resize execute finished!");
+}
+
+
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
@@ -84,6 +144,10 @@ sc_input_manager_init(struct sc_input_manager *im,
     sc_cmd_input_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
     sc_cmd_input_register_command("exit", input_cmd_callback_exit, im);
     sc_cmd_input_register_command("save_screen", input_cmd_callback_save_screen, im);
+    sc_cmd_input_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im);
+    sc_cmd_input_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);
+    sc_cmd_input_register_command("fullscreen", input_cmd_callback_fullscreen, im);
+    sc_cmd_input_register_command("resize_manual", input_cmd_callback_resize_manual, im);
 }
 
 static void

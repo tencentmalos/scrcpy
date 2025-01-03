@@ -182,4 +182,6 @@ sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
 
 void sc_screen_force_update_one_frame(struct sc_screen *screen);
 
+void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, int dh);
+
 #endif
