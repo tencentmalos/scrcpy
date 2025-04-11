@@ -4,9 +4,13 @@ project('scrcpy',
         meson_version: '>= 0.48',
         default_options: [
             'c_std=c11',
+            'cpp_std=c++20',
             'warning_level=2',
             'b_ndebug=if-release',
         ])
+
+# add_project_arguments('-static-libgcc', '-static-libstdc++', '-Wmissing-prototypes', language: 'cpp')
+# add_project_link_arguments('-static-libgcc', '-static-libstdc++', language: 'cpp')
 
 add_project_arguments('-Wmissing-prototypes', language: 'c')
 
