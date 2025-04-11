@@ -2,6 +2,7 @@
 #define SCRCPY_NETEVENT_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <event2/event.h>
 
 struct netevent;

@@ -5,6 +5,7 @@
 #include <event2/util.h>
 #include <string.h>
 #include <stdlib.h>
+//#include <arpa/inet.h>
 
 struct netevent {
     struct event_base *base;
@@ -13,6 +14,15 @@ struct netevent {
     void *userdata;
     bool running;
 };
+
+//netevent header
+#pragma pack(push, 1)
+typedef struct {
+    uint16_t cmd_len;    // cmd字段长度
+    uint16_t content_len; // content字段长度 
+    //uint32_t reserved;    // 保留字段
+} netevent_header;
+#pragma pack(pop)
 
 // 初始化libevent客户端模块
 struct netevent *netevent_init(void) {
@@ -43,21 +53,47 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
     struct netevent *ne = ctx;
     struct evbuffer *input = bufferevent_get_input(bev);
     
-    // 解析命令格式: cmd|content\n
-    char *line = evbuffer_readln(input, NULL, EVBUFFER_EOL_LF);
-    if (!line) return;
-
-    char *sep = strchr(line, '|');
-    if (sep) {
-        *sep = '\0';
-        const char *cmd = line;
-        const char *content = sep + 1;
+    while (1) {
+        // 1. 检查是否有完整包头
+        if (evbuffer_get_length(input) < sizeof(netevent_header)) {
+            return;
+        }
         
+        // 2. 读取包头
+        netevent_header header;
+        evbuffer_copyout(input, &header, sizeof(header));
+        header.cmd_len = ntohs(header.cmd_len);
+        header.content_len = ntohs(header.content_len);
+        
+        // 3. 检查是否有完整数据包
+        size_t total_len = sizeof(header) + header.cmd_len + header.content_len;
+        if (evbuffer_get_length(input) < total_len) {
+            return;
+        }
+        
+        // 4. 移除包头
+        evbuffer_drain(input, sizeof(header));
+        
+        // 5. 读取cmd和content
+        char *cmd = malloc(header.cmd_len + 1);
+        char *content = header.content_len > 0 ? malloc(header.content_len + 1) : NULL;
+        
+        evbuffer_remove(input, cmd, header.cmd_len);
+        cmd[header.cmd_len] = '\0';
+        
+        if (content) {
+            evbuffer_remove(input, content, header.content_len);
+            content[header.content_len] = '\0';
+        }
+        
+        // 6. 回调处理
         if (ne->on_command) {
             ne->on_command(cmd, content, ne->userdata);
         }
+        
+        free(cmd);
+        if (content) free(content);
     }
-    free(line);
 }
 
 // 事件回调
@@ -116,8 +152,17 @@ bool netevent_send_response(struct netevent *ne,
                           const char *content) {
     if (!ne || !ne->bev || !cmd) return false;
 
+    netevent_header header;
+    header.cmd_len = htons(strlen(cmd));
+    header.content_len = content ? htons(strlen(content)) : 0;
+    //header.reserved = 0;
+    
     struct evbuffer *output = bufferevent_get_output(ne->bev);
-    evbuffer_add_printf(output, "%s|%s\n", cmd, content ? content : "");
+    evbuffer_add(output, &header, sizeof(header));
+    evbuffer_add(output, cmd, strlen(cmd));
+    if (content) {
+        evbuffer_add(output, content, strlen(content));
+    }
     return true;
 }
 
