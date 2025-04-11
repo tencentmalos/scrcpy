@@ -13,7 +13,7 @@
             "miDebuggerPath": "D:/msys64/mingw64/bin/gdb.exe",
             "args": [
                 "--max-size=1920",
-                //"--external-window-handle=331008", 
+                "--external-window-handle=855542", 
                 "--no-audio"
                 ],
             "cwd": "D:/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0",
@@ -22,6 +22,27 @@
             "externalConsole": false,
             "MIMode": "gdb"
         },
+        {
+            "name": "MSYS2 Attach",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "D:/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/scrcpy.exe",
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:/msys64/mingw64/bin/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+        ,
         {
             "name": "macos debugger",
             "type": "cppdbg",
