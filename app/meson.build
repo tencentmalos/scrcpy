@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/netevent/netevent.c',
     'src/adb/adb.c',
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',
@@ -120,11 +121,13 @@ dependencies = [
     dependency('libavutil', static: static),
     dependency('libswresample', static: static),
     dependency('sdl2', version: '>= 2.0.5', static: static),
+    dependency('libevent', static: static),
 ]
 
 if v4l2_support
     dependencies += dependency('libavdevice', static: static)
 endif
+
 
 if usb_support
     dependencies += dependency('libusb-1.0', static: static)
@@ -181,6 +184,7 @@ conf.set('HAVE_USB', usb_support)
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
+
 
 executable('scrcpy', src,
            dependencies: dependencies,
