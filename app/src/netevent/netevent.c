@@ -18,8 +18,9 @@ struct netevent {
 //netevent header
 #pragma pack(push, 1)
 typedef struct {
-    uint16_t cmd_len;    // cmd字段长度
-    uint16_t content_len; // content字段长度 
+    uint32_t id;
+    uint32_t cmd_len;    // cmd字段长度
+    uint32_t content_len; // content字段长度 
     //uint32_t reserved;    // 保留字段
 } netevent_header;
 #pragma pack(pop)
@@ -62,8 +63,9 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
         // 2. 读取包头
         netevent_header header;
         evbuffer_copyout(input, &header, sizeof(header));
-        header.cmd_len = ntohs(header.cmd_len);
-        header.content_len = ntohs(header.content_len);
+        header.id = htonl(header.id);
+        header.cmd_len = htonl(header.cmd_len);
+        header.content_len = htonl(header.content_len);
         
         // 3. 检查是否有完整数据包
         size_t total_len = sizeof(header) + header.cmd_len + header.content_len;
@@ -153,8 +155,10 @@ bool netevent_send_response(struct netevent *ne,
     if (!ne || !ne->bev || !cmd) return false;
 
     netevent_header header;
-    header.cmd_len = htons(strlen(cmd));
-    header.content_len = content ? htons(strlen(content)) : 0;
+    uint32_t tmpid = 0;
+    header.id = htonl(tmpid);
+    header.cmd_len = htonl(strlen(cmd));
+    header.content_len = content ? htonl(strlen(content)) : 0;
     //header.reserved = 0;
     
     struct evbuffer *output = bufferevent_get_output(ne->bev);
