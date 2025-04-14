@@ -28,10 +28,14 @@ bool netevent_send_response(struct netevent *ne,
                           const char *cmd,
                           const char *content);
 
-// 运行事件循环
-void netevent_run(struct netevent *ne);
+// 运行事件循环(非阻塞模式，适合主循环调用)
+// 返回true表示还有事件待处理，false表示无事件
+bool netevent_run(struct netevent *ne, int timeout_ms);
 
 // 停止事件循环
 void netevent_stop(struct netevent *ne);
+
+// 检查是否正在运行
+bool netevent_is_running(struct netevent *ne);
 
 #endif // SCRCPY_NETEVENT_H

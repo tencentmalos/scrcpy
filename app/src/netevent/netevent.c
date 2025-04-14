@@ -170,16 +170,38 @@ bool netevent_send_response(struct netevent *ne,
     return true;
 }
 
-// 运行事件循环
-void netevent_run(struct netevent *ne) {
-    if (!ne || !ne->base) return;
-    ne->running = true;
-    event_base_dispatch(ne->base);
+// 运行事件循环(非阻塞模式)
+// timeout_ms: 超时时间(毫秒)，0表示不阻塞，-1表示阻塞直到有事件
+bool netevent_run(struct netevent *ne, int timeout_ms) {
+    if (!ne || !ne->base) return false;
+    
+    int a = timeout_ms;
+    a = 0;
+    // struct timeval tv;
+    // if (timeout_ms >= 0) {
+    //     tv.tv_sec = timeout_ms / 1000;
+    //     tv.tv_usec = (timeout_ms % 1000) * 1000;
+    // }
+    
+    int flags = EVLOOP_ONCE;
+    if (timeout_ms == 0) {
+        flags |= EVLOOP_NONBLOCK;
+    }
+    // int res = event_base_loop(ne->base, flags, 
+    //                         timeout_ms > 0 ? &tv : NULL);
+
+    int res = event_base_loop(ne->base, flags);
+    
+    return res == 0; // 返回true表示还有事件待处理
 }
 
 // 停止事件循环
 void netevent_stop(struct netevent *ne) {
     if (!ne || !ne->base) return;
-    ne->running = false;
     event_base_loopbreak(ne->base);
+}
+
+// 检查是否正在运行
+bool netevent_is_running(struct netevent *ne) {
+    return ne && ne->base && !event_base_got_break(ne->base);
 }

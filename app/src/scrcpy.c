@@ -202,7 +202,7 @@ event_loop(struct scrcpy *s) {
 
     SDL_Event event;
     while (true) {
-        netevent_run(ne);
+        netevent_run(ne, 0);
 
         //Check if request to exit
         if(s->screen.im.is_cmd_input_request_exit) {
