@@ -1,4 +1,4 @@
-#include "netevent.h"
+#include "net_cmd.h"
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
@@ -41,7 +41,7 @@ typedef struct {
 
 
 //netevent header
-struct netevent {
+struct net_cmd_state {
     struct event_base *base;
     struct bufferevent *bev;
     //void (*on_command)(const char *cmd, const char *content, void *userdata);
@@ -52,13 +52,13 @@ struct netevent {
 };
 
 
-netevent* g_netevent = nullptr;
+net_cmd_state* g_net_state = nullptr;
 
 //static bool g_netevent_running = true;
 
 struct netevent_command_info {
     std::string             command_name;
-    net_command_callback    callback;
+    net_cmd_callback        callback;
     void*                   userdata;
 };
 
@@ -79,36 +79,40 @@ struct netevent_response_info
 netevent_response_info g_netevent_response_info;
 
 
-struct netevent *netevent_init(void) {
-    struct netevent *ne = (struct netevent *)calloc(1, sizeof(*ne));
-    if (!ne) return NULL;
+bool net_cmd_init(void) {
+    if(g_net_state) {
+        LOGW("net_cmd is already work here!");
+        return true;
+    }
+
+    struct net_cmd_state *ne = (struct net_cmd_state *)calloc(1, sizeof(*ne));
+    if (!ne) return false;
 
     ne->base = event_base_new();
     if (!ne->base) {
         free(ne);
-        return NULL;
+        return false;
     }
 
     ne->running = false;
 
-    g_netevent = ne;
+    g_net_state = ne;
 
-    return ne;
+    return true;
 }
 
-void netevent_destroy(struct netevent *ne) {
-    if (!ne) return;
+void net_cmd_destroy() {
+    if (!g_net_state) return;
 
-    if (ne->bev) bufferevent_free(ne->bev);
-    if (ne->base) event_base_free(ne->base);
-    free(ne);
+    if (g_net_state->bev) bufferevent_free(g_net_state->bev);
+    if (g_net_state->base) event_base_free(g_net_state->base);
+    free(g_net_state);
 
-    g_netevent = nullptr;
+    g_net_state = nullptr;
 }
 
 static void netevent_send_last_result() {
-    netevent_send_response(g_netevent, 
-        g_netevent_response_info.is_suc,
+    net_cmd_send_response(g_netevent_response_info.is_suc,
         g_netevent_response_info.request_id,
         g_netevent_response_info.cmd_name.c_str(),
         g_netevent_response_info.response_result.c_str());
@@ -117,18 +121,18 @@ static void netevent_send_last_result() {
 
 // command handle function here, now in main thread, so just call the command is ok.
 static void on_netevent_command(uint16_t req_id, const char *cmd, const char *content, void *userdata) {
-    std::string cmdname = cmd;
-    std::string extras = content;
+    std::string cmdname = cmd != nullptr ? cmd : "";
+    std::string extras = content != nullptr ? content: "";
 
-    LOGI("> netevent: %d [%s] %s", (int)req_id, cmdname.c_str(), extras.c_str());
+    LOGI("net_cmd <- [%s] %s (%d)", cmdname.c_str(), extras.c_str(), (int)req_id);
 
     auto it = g_netevent_command_map.find(cmdname);
     if (it != g_netevent_command_map.end()) {
         //default is suc here        
-        netevent_command_set_result(req_id, 1, cmd, "");
+        net_cmd_set_last_result(req_id, 1, cmd, "");
         it->second.callback(req_id, cmd, content, it->second.userdata);
     } else {
-        netevent_command_set_result(req_id, 0, cmd, "unknown");
+        net_cmd_set_last_result(req_id, 0, cmd, "unknown");
         //LOGI("icmd-unknown-0: %s %s", cmdname.c_str(), extras.c_str());
     }
 
@@ -139,7 +143,7 @@ static void on_netevent_command(uint16_t req_id, const char *cmd, const char *co
 
 
 static void read_cb(struct bufferevent *bev, void *ctx) {
-    struct netevent *ne = (struct netevent *)ctx;
+    struct net_cmd_state *ne = (struct net_cmd_state *)ctx;
     struct evbuffer *input = bufferevent_get_input(bev);
     
     while (1) {
@@ -189,7 +193,7 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
 
 // 事件回调
 static void event_cb(struct bufferevent *bev, short events, void *ctx) {
-    struct netevent *ne = (struct netevent *)ctx;
+    struct net_cmd_state *ne = (struct net_cmd_state *)ctx;
     if (events & BEV_EVENT_ERROR) {
 
         on_netevent_command(1, "error", "connection error", ne->userdata);
@@ -202,8 +206,8 @@ static void event_cb(struct bufferevent *bev, short events, void *ctx) {
     }
 }
 
-int netevent_connect(struct netevent *ne, const char *host, int port) {
-    if (!ne || !host || port <= 0) return -1;
+int net_cmd_connect(const char *host, int port) {
+    if (!g_net_state || !host || port <= 0) return -1;
 
     struct sockaddr_in sin;
     memset(&sin, 0, sizeof(sin));
@@ -211,24 +215,24 @@ int netevent_connect(struct netevent *ne, const char *host, int port) {
     sin.sin_port = htons(port);
     evutil_inet_pton(AF_INET, host, &sin.sin_addr);
 
-    ne->bev = bufferevent_socket_new(ne->base, -1, BEV_OPT_CLOSE_ON_FREE);
-    if (!ne->bev) return -1;
+    g_net_state->bev = bufferevent_socket_new(g_net_state->base, -1, BEV_OPT_CLOSE_ON_FREE);
+    if (!g_net_state->bev) return -1;
 
-    bufferevent_setcb(ne->bev, read_cb, NULL, event_cb, ne);
-    bufferevent_enable(ne->bev, EV_READ|EV_WRITE);
+    bufferevent_setcb(g_net_state->bev, read_cb, nullptr, event_cb, g_net_state);
+    bufferevent_enable(g_net_state->bev, EV_READ|EV_WRITE);
 
-    if (bufferevent_socket_connect(ne->bev, 
+    if (bufferevent_socket_connect(g_net_state->bev, 
                                  (struct sockaddr*)&sin, 
                                  sizeof(sin))) {
-        bufferevent_free(ne->bev);
-        ne->bev = NULL;
+        bufferevent_free(g_net_state->bev);
+        g_net_state->bev = nullptr;
         return -1;
     }
 
     return 0;
 }
 
-void netevent_register_command(const char* name, net_command_callback callback, void* userdata) {
+void net_cmd_register_command(const char* name, net_cmd_callback callback, void* userdata) {
     //ToDo: add implement here
     std::string cmdname = name;
     LOGI("netevent command: %s registered!", name);
@@ -243,12 +247,11 @@ void netevent_register_command(const char* name, net_command_callback callback, 
 
 
 
-bool netevent_send_response(struct netevent *ne,
-                            bool is_suc,
+bool net_cmd_send_response(bool is_suc,
                             uint16_t req_id,
                             const char *cmd,
                             const char *content) {
-    if (!ne || !ne->bev || !cmd) return false;
+    if (!g_net_state || !g_net_state->bev || !cmd) return false;
 
     netevent_header header;
     header.type = 1;
@@ -258,7 +261,7 @@ bool netevent_send_response(struct netevent *ne,
     header.content_len = content ? htonl(strlen(content)) : 0;
     //header.reserved = 0;
     
-    struct evbuffer *output = bufferevent_get_output(ne->bev);
+    struct evbuffer *output = bufferevent_get_output(g_net_state->bev);
     evbuffer_add(output, &header, sizeof(header));
     evbuffer_add(output, cmd, strlen(cmd));
     if (content) {
@@ -267,11 +270,10 @@ bool netevent_send_response(struct netevent *ne,
     return true;
 }
 
-bool netevent_send_request(struct netevent *ne,
-                            uint16_t req_id,
+bool net_cmd_send_request(uint16_t req_id,
                             const char *cmd,
                             const char *content) {
-    if (!ne || !ne->bev || !cmd) return false;
+    if (!g_net_state || !g_net_state->bev || !cmd) return false;
 
     netevent_header header;
     header.type = 0;
@@ -281,7 +283,7 @@ bool netevent_send_request(struct netevent *ne,
     header.content_len = content ? htonl(strlen(content)) : 0;
     //header.reserved = 0;
     
-    struct evbuffer *output = bufferevent_get_output(ne->bev);
+    struct evbuffer *output = bufferevent_get_output(g_net_state->bev);
     evbuffer_add(output, &header, sizeof(header));
     evbuffer_add(output, cmd, strlen(cmd));
     if (content) {
@@ -290,30 +292,30 @@ bool netevent_send_request(struct netevent *ne,
     return true;
 }
 
-bool netevent_loop_once(struct netevent *ne) {
-    if (!ne || !ne->base) return false;
+bool net_cmd_loop_once() {
+    if (!g_net_state || !g_net_state->base) return false;
     
     int flags = EVLOOP_ONCE | EVLOOP_NONBLOCK;
 
-    int res = event_base_loop(ne->base, flags);
+    int res = event_base_loop(g_net_state->base, flags);
     
     // 返回true表示还有事件待处理
     return res == 0; 
 }
 
 // 停止事件循环
-void netevent_stop(struct netevent *ne) {
-    if (!ne || !ne->base) return;
-    event_base_loopbreak(ne->base);
+void net_cmd_stop() {
+    if (!g_net_state || !g_net_state->base) return;
+    event_base_loopbreak(g_net_state->base);
 }
 
 // 检查是否正在运行
-bool netevent_is_running(struct netevent *ne) {
-    return ne && ne->base && !event_base_got_break(ne->base);
+bool net_cmd_is_running() {
+    return g_net_state && g_net_state->base && !event_base_got_break(g_net_state->base);
 }
 
 
-void netevent_command_set_result(uint16_t req_id, uint8_t is_suc, const char* cmd, const char* result_info) {
+void net_cmd_set_last_result(uint16_t req_id, uint8_t is_suc, const char* cmd, const char* result_info) {
     g_netevent_response_info.cmd_name = cmd;
     g_netevent_response_info.request_id = req_id;
     g_netevent_response_info.is_suc = is_suc;

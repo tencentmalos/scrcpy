@@ -1,6 +1,6 @@
 src = [
     'src/main.c',
-    'src/netevent/netevent.cpp',
+    'src/net_cmd/net_cmd.cpp',
     'src/adb/adb.c',
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',

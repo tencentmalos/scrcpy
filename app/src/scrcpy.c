@@ -46,7 +46,7 @@
 # include "v4l2_sink.h"
 #endif
 
-#include "netevent/netevent.h"
+#include "net_cmd/net_cmd.h"
 
 
 struct scrcpy {
@@ -170,24 +170,10 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
-    // 初始化netevent
-    struct netevent *ne = netevent_init();
-    if (!ne) {
-        // 错误处理
-        LOGE("Can not init netevent!");
-    }
-    
-    // 连接到服务器
-    if (netevent_connect(ne, "127.0.0.1", 5566) < 0) {
-        // 错误处理
-        LOGE("Can not connect to 127.0.0.1:5566!");
-    }
-
-    netevent_send_request(ne, 1, "test", "message dummy here!");
 
     SDL_Event event;
     while (true) {
-        netevent_loop_once(ne);
+        //netevent_loop_once(ne);
 
         //Check if request to exit
         if(s->screen.im.is_cmd_input_request_exit) {
@@ -981,7 +967,22 @@ aoa_complete:
     }
 
     //start command input thread here
-    sc_start_cmd_input_thread();
+    // intialize net_cmd
+    bool is_suc = net_cmd_init();
+    if (!is_suc) {
+        // error here
+        LOGE("Can not init netevent!");
+        exit(-1);
+    }
+    
+    // connect to cli-tools
+    if (net_cmd_connect("127.0.0.1", 5566) < 0) {
+        // error here
+        LOGE("Can not connect to 127.0.0.1:5566!");
+        exit(-1);
+    }
+
+    //sc_start_cmd_input_thread();
 
     //BugFix: add here to let window always show here
     //SDL_ShowWindow(s->screen.window);
@@ -993,7 +994,9 @@ aoa_complete:
     LOGD("quit...");
 
     //stop command input thread here
-    sc_stop_cmd_input_thread();
+    net_cmd_stop();
+    net_cmd_destroy();
+    //sc_stop_cmd_input_thread();
 
     if (options->video_playback) {
         // Close the window immediately on closing, because screen_destroy()
