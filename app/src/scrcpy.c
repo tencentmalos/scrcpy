@@ -168,18 +168,6 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
     }
 }
 
-// 命令处理回调函数
-static void on_netevent_command(const char *cmd, const char *content, void *userdata) {
-    // if (strcmp(cmd, "screenshot") == 0) {
-    //     // 处理截图命令
-    //     take_screenshot(content); // content可能是保存路径
-    // } else if (strcmp(cmd, "rotate") == 0) {
-    //     // 处理旋转命令
-    //     rotate_display(atoi(content));
-    // }
-    // // 其他命令处理...
-}
-
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
     // 初始化netevent
@@ -188,9 +176,6 @@ event_loop(struct scrcpy *s) {
         // 错误处理
         LOGE("Can not init netevent!");
     }
-
-    // 设置回调
-    netevent_set_command_handler(ne, on_netevent_command, NULL);
     
     // 连接到服务器
     if (netevent_connect(ne, "127.0.0.1", 5566) < 0) {
@@ -198,11 +183,11 @@ event_loop(struct scrcpy *s) {
         LOGE("Can not connect to 127.0.0.1:5566!");
     }
 
-    netevent_send_response(ne, "test", "message dummy here!");
+    netevent_send_request(ne, 1, "test", "message dummy here!");
 
     SDL_Event event;
     while (true) {
-        netevent_run(ne, 0);
+        netevent_loop_once(ne);
 
         //Check if request to exit
         if(s->screen.im.is_cmd_input_request_exit) {

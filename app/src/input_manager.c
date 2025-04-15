@@ -11,12 +11,14 @@
 #include "screen.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
-#include "util/cmd_input.h"
+//#include "util/cmd_input.h"
 #include "util/capture_screen.h"
 #include "screen.h"
+#include "netevent/netevent.h"
+
 
 // Input command callbacks here
-static void input_cmd_callback_change_eye_mode(const char* extra, void* userdata) {
+static void input_cmd_callback_change_eye_mode(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     if(strcmp(extra, "left") == 0) {
         //left eye
@@ -31,19 +33,19 @@ static void input_cmd_callback_change_eye_mode(const char* extra, void* userdata
     sc_screen_force_update_one_frame(im->screen);
 }
 
-static void input_cmd_callback_exit(const char* extra, void* userdata) {
+static void input_cmd_callback_exit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     im->is_cmd_input_request_exit = true;
     LOGI("Command request to exit now.");
 }
 
-static void input_cmd_callback_save_screen(const char* extra, void* userdata) {
+static void input_cmd_callback_save_screen(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     int ret = sc_save_screen_shot(extra, im->screen->display.renderer);
-    sc_cmd_set_result(ret == 0, "");
+    netevent_command_set_result(req_id, (uint8_t)(ret == 0), cmd, "");
 }
 
-static void input_cmd_callback_resize_to_1_1(const char* extra, void* userdata) {
+static void input_cmd_callback_resize_to_1_1(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     
     if(im->screen->fullscreen) {
@@ -54,7 +56,7 @@ static void input_cmd_callback_resize_to_1_1(const char* extra, void* userdata) 
     sc_screen_resize_to_pixel_perfect(im->screen);
 }
 
-static void input_cmd_callback_resize_to_fit(const char* extra, void* userdata) {
+static void input_cmd_callback_resize_to_fit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
 
     if(im->screen->fullscreen) {
@@ -65,12 +67,12 @@ static void input_cmd_callback_resize_to_fit(const char* extra, void* userdata) 
     sc_screen_resize_to_fit(im->screen);
 }
 
-static void input_cmd_callback_fullscreen(const char* extra, void* userdata) {
+static void input_cmd_callback_fullscreen(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     sc_screen_toggle_fullscreen(im->screen);
 }
 
-static void input_cmd_callback_resize_manual(const char* extra, void* userdata) {
+static void input_cmd_callback_resize_manual(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     int dw = 800;
     int dh = 600;
@@ -141,13 +143,13 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->is_cmd_input_request_exit = false;
 
     //Register input command callbacks
-    sc_cmd_input_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
-    sc_cmd_input_register_command("exit", input_cmd_callback_exit, im);
-    sc_cmd_input_register_command("save_screen", input_cmd_callback_save_screen, im);
-    sc_cmd_input_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im);
-    sc_cmd_input_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);
-    sc_cmd_input_register_command("fullscreen", input_cmd_callback_fullscreen, im);
-    sc_cmd_input_register_command("resize_manual", input_cmd_callback_resize_manual, im);
+    netevent_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
+    netevent_register_command("exit", input_cmd_callback_exit, im);
+    netevent_register_command("save_screen", input_cmd_callback_save_screen, im);
+    netevent_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im);
+    netevent_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);
+    netevent_register_command("fullscreen", input_cmd_callback_fullscreen, im);
+    netevent_register_command("resize_manual", input_cmd_callback_resize_manual, im);
 }
 
 static void
@@ -1116,7 +1118,8 @@ void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
     //call cmd input loop first
-    sc_cmd_input_loop_once();
+    //ToDo: add network loop to here
+    //sc_cmd_input_loop_once();
 
     bool control = im->controller;
     bool paused = im->screen->paused;
