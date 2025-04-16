@@ -22,5 +22,6 @@ scrcpy(struct scrcpy_options *options);
 
 int sc_run_as_dll_mode(const char* arginfo);
 
+void sc_request_exit();
 
 #endif

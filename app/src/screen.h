@@ -107,6 +107,7 @@ struct sc_screen_params {
     bool start_fps_counter;
 
     uint64_t external_window_handle;
+    uint16_t cli_service_port;
 };
 
 int sc_test_add(int a, int b);

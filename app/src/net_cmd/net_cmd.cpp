@@ -22,6 +22,7 @@
 #include <mutex>
 
 extern "C" {
+    #include "scrcpy.h"
     #include "util/log.h"
 }
     
@@ -196,13 +197,16 @@ static void event_cb(struct bufferevent *bev, short events, void *ctx) {
     struct net_cmd_state *ne = (struct net_cmd_state *)ctx;
     if (events & BEV_EVENT_ERROR) {
 
-        on_netevent_command(1, "error", "connection error", ne->userdata);
+        //on_netevent_command(1, "error", "connection error", ne->userdata);
         // if (ne->on_command) {
         //     ne->on_command("error", "connection error", ne->userdata);
         // }
 
         bufferevent_free(bev);
-        ne->bev = NULL;
+        ne->bev = nullptr;
+
+        LOGE("cli service is run with connection error here, scrcpy just exited now.");
+        sc_request_exit();
     }
 }
 

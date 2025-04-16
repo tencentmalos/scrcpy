@@ -106,6 +106,7 @@ enum {
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
     OPT_EXTERNAL_WINDOW_HANDLE,
+    OPT_CLI_SERVICE_PORT,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
     OPT_START_APP,
@@ -460,6 +461,12 @@ static const struct sc_option options[] = {
         .longopt = "external-window-handle",
         .argdesc = "value",
         .text = "create scrcpy in a external window.",
+    },
+    {
+        .longopt_id = OPT_CLI_SERVICE_PORT,
+        .longopt = "cli_service_port",
+        .argdesc = "value",
+        .text = "connect scrcpy to cli service by tcp port",
     },
     {
         .shortopt = 'h',
@@ -2806,6 +2813,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     char *endptr;
                     opts->external_window_handle = strtoull(optarg, &endptr, 10);
                     LOGW("external-window-handle=%llu", opts->external_window_handle);
+                }
+                break;
+            case OPT_CLI_SERVICE_PORT:
+                {
+                    char *endptr;
+                    opts->cli_service_port =  (uint16_t)strtoul(optarg, &endptr, 10);
+                    LOGW("cli_service_port=%d", (int)opts->cli_service_port);
                 }
                 break;
             case OPT_NEW_DISPLAY:

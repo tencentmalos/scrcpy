@@ -95,6 +95,9 @@ struct scrcpy {
     struct sc_timeout timeout;
 };
 
+struct scrcpy* g_used_scrcpy = NULL;
+
+
 #ifdef _WIN32
 static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
@@ -398,9 +401,19 @@ init_sdl_gamepads(void) {
     }
 }
 
+void sc_request_exit() {
+    if(g_used_scrcpy == NULL) return;
+
+    g_used_scrcpy->screen.im.is_cmd_input_request_exit = true;
+}
+
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
+
+    g_used_scrcpy = &scrcpy;
+
 #ifndef NDEBUG
     // Detect missing initializations
     memset(&scrcpy, 42, sizeof(scrcpy));
@@ -846,6 +859,7 @@ aoa_complete:
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
             .external_window_handle = options->external_window_handle,
+            .cli_service_port = options->cli_service_port,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -968,19 +982,27 @@ aoa_complete:
 
     //start command input thread here
     // intialize net_cmd
-    bool is_suc = net_cmd_init();
-    if (!is_suc) {
-        // error here
-        LOGE("Can not init netevent!");
-        exit(-1);
+
+    if(options->cli_service_port != 0) {
+        LOGI("Try to initialize cli service in port:%d", (int)options->cli_service_port);
+        bool is_suc = net_cmd_init();
+        if (!is_suc) {
+            // error here
+            LOGE("Can not init netevent!");
+            sc_request_exit();
+        }
+        
+        // connect to cli-tools
+        if (net_cmd_connect("127.0.0.1", options->cli_service_port) < 0) {
+            // error here
+            LOGE("Can not connect to cli service with 127.0.0.1:%d!", (int)options->cli_service_port);
+            sc_request_exit();
+        }
+    } else {
+        //Not use cli service mode here
+        ;
     }
-    
-    // connect to cli-tools
-    if (net_cmd_connect("127.0.0.1", 5566) < 0) {
-        // error here
-        LOGE("Can not connect to 127.0.0.1:5566!");
-        exit(-1);
-    }
+
 
     //sc_start_cmd_input_thread();
 
@@ -994,8 +1016,10 @@ aoa_complete:
     LOGD("quit...");
 
     //stop command input thread here
-    net_cmd_stop();
-    net_cmd_destroy();
+    if(options->cli_service_port != 0) {
+        net_cmd_stop();
+        net_cmd_destroy();
+    }
     //sc_stop_cmd_input_thread();
 
     if (options->video_playback) {
