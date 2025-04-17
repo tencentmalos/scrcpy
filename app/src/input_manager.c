@@ -102,7 +102,50 @@ static void input_cmd_callback_resize_manual(uint16_t req_id, const char* cmd, c
 
     SDL_SetWindowSize(im->screen->window, dw, dh);
     sc_screen_update_content_rect_by_manual(im->screen, dw, dh);
+    
     LOGI("resize execute finished!");
+}
+
+static void input_cmd_callback_change_position_manual(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    int posx = 0;
+    int posy = 0;
+
+    const char* delim = ",";
+    char* token = strtok((char*)extra, delim);
+
+    int tmpcount = 0;
+
+    while (token != NULL)
+    {
+        if(tmpcount == 0) {
+            posx = atoi(token);
+        } else if(tmpcount == 1){
+            posy = atoi(token);
+        } else {
+            //do not need now
+            break;
+        }
+
+        token = strtok(NULL, delim);
+        tmpcount++;
+    }
+    
+    LOGI("change_position_manual to %dx%d", posx, posy);
+    
+    sc_screen_change_position_by_manual(im->screen, posx, posy);
+
+    LOGI("change position execute finished!");
+}
+
+static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    //SDL_RaiseWindow(im->screen->window);
+    
+    SDL_SetWindowAlwaysOnTop(im->screen->window, SDL_TRUE);
+
+    LOGI("raise_window called finished!");
 }
 
 
@@ -151,6 +194,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     net_cmd_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);
     net_cmd_register_command("fullscreen", input_cmd_callback_fullscreen, im);
     net_cmd_register_command("resize_manual", input_cmd_callback_resize_manual, im);
+    net_cmd_register_command("change_position_manual", input_cmd_callback_change_position_manual, im);
+    net_cmd_register_command("raise_window", input_cmd_callback_raise_window, im);
 }
 
 static void

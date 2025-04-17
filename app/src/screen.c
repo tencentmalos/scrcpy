@@ -207,6 +207,12 @@ void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, i
     }
 }
 
+void sc_screen_change_position_by_manual(struct sc_screen *screen, int xpos, int ypos) {
+    if(screen->window == NULL) return;
+    
+    SDL_SetWindowPosition(screen->window, xpos, ypos);
+}
+
 
 static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
