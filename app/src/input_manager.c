@@ -36,8 +36,15 @@ static void input_cmd_callback_change_eye_mode(uint16_t req_id, const char* cmd,
 static void input_cmd_callback_exit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
     im->is_cmd_input_request_exit = true;
-    LOGI("Command request to exit now.");
+    LOGD("Command request to exit now.");
     net_cmd_stop();
+}
+
+static void input_cmd_callback_force_kill(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+    im->is_cmd_input_request_exit = true;
+    LOGD("Command request to forece_kill now.");
+    exit(-1);
 }
 
 static void input_cmd_callback_save_screen(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
@@ -98,12 +105,12 @@ static void input_cmd_callback_resize_manual(uint16_t req_id, const char* cmd, c
         tmpcount++;
     }
     
-    LOGI("resize_manual to %dx%d", dw, dh);
+    LOGD("resize_manual to %dx%d", dw, dh);
 
     SDL_SetWindowSize(im->screen->window, dw, dh);
     sc_screen_update_content_rect_by_manual(im->screen, dw, dh);
     
-    LOGI("resize execute finished!");
+    LOGD("resize execute finished!");
 }
 
 static void input_cmd_callback_change_position_manual(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
@@ -131,11 +138,11 @@ static void input_cmd_callback_change_position_manual(uint16_t req_id, const cha
         tmpcount++;
     }
     
-    LOGI("change_position_manual to %dx%d", posx, posy);
+    LOGD("change_position_manual to %dx%d", posx, posy);
     
     sc_screen_change_position_by_manual(im->screen, posx, posy);
 
-    LOGI("change position execute finished!");
+    LOGD("change position execute finished!");
 }
 
 static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
@@ -145,7 +152,7 @@ static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, co
     
     SDL_SetWindowAlwaysOnTop(im->screen->window, SDL_TRUE);
 
-    LOGI("raise_window called finished!");
+    LOGD("raise_window called finished!");
 }
 
 
@@ -189,6 +196,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     //Register input command callbacks
     net_cmd_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
     net_cmd_register_command("exit", input_cmd_callback_exit, im);
+    net_cmd_register_command("force_kill", input_cmd_callback_force_kill, im);
     net_cmd_register_command("save_screen", input_cmd_callback_save_screen, im);
     net_cmd_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im);
     net_cmd_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);

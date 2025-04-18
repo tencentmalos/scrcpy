@@ -52,9 +52,6 @@ struct net_cmd_state {
     //logic data here?
 };
 
-
-net_cmd_state* g_net_state = nullptr;
-
 //static bool g_netevent_running = true;
 
 struct netevent_command_info {
@@ -78,6 +75,10 @@ struct netevent_response_info
 
 
 netevent_response_info g_netevent_response_info;
+
+
+net_cmd_state* g_net_state = nullptr;
+uint16_t g_net_request_id_count = 0;
 
 
 bool net_cmd_init(void) {
@@ -125,7 +126,7 @@ static void on_netevent_command(uint16_t req_id, const char *cmd, const char *co
     std::string cmdname = cmd != nullptr ? cmd : "";
     std::string extras = content != nullptr ? content: "";
 
-    LOGI("net_cmd <- [%s] %s (%d)", cmdname.c_str(), extras.c_str(), (int)req_id);
+    LOGD("net_cmd <- [%s] %s (%d)", cmdname.c_str(), extras.c_str(), (int)req_id);
 
     auto it = g_netevent_command_map.find(cmdname);
     if (it != g_netevent_command_map.end()) {
@@ -139,7 +140,7 @@ static void on_netevent_command(uint16_t req_id, const char *cmd, const char *co
 
     netevent_send_last_result();
 
-    LOGI("Scrcpy execute command:[%s] %s", cmd, content);
+    LOGD("Scrcpy execute command:[%s] %s", cmd, content);
 }
 
 
@@ -206,7 +207,8 @@ static void event_cb(struct bufferevent *bev, short events, void *ctx) {
         ne->bev = nullptr;
 
         LOGE("cli service is run with connection error here, scrcpy just exited now.");
-        sc_request_exit();
+        //sc_request_exit();
+        exit(-1);   //just force kill here
     }
 }
 
@@ -274,15 +276,16 @@ bool net_cmd_send_response(bool is_suc,
     return true;
 }
 
-bool net_cmd_send_request(uint16_t req_id,
-                            const char *cmd,
+uint16_t net_cmd_send_request(const char *cmd,
                             const char *content) {
-    if (!g_net_state || !g_net_state->bev || !cmd) return false;
+    if (!g_net_state || !g_net_state->bev || !cmd) return 0;
 
+    uint16_t req_id = ++g_net_request_id_count;
+    
     netevent_header header;
     header.type = 0;
     header.flag = 0;
-    header.id = htonl(req_id);
+    header.id = htons(req_id);
     header.cmd_len = htonl(strlen(cmd));
     header.content_len = content ? htonl(strlen(content)) : 0;
     //header.reserved = 0;
@@ -293,7 +296,11 @@ bool net_cmd_send_request(uint16_t req_id,
     if (content) {
         evbuffer_add(output, content, strlen(content));
     }
-    return true;
+    return req_id;
+}
+
+void net_cmd_send_start_work_notify() {
+    net_cmd_send_request("start_work_notify", "");
 }
 
 bool net_cmd_loop_once() {

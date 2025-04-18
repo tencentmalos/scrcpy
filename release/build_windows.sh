@@ -21,10 +21,10 @@ cd .. # root project dir
 WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 
 app/deps/adb_windows.sh
-app/deps/sdl.sh $WINXX cross shared
+# app/deps/sdl.sh $WINXX cross shared
 app/deps/dav1d.sh $WINXX cross shared
 # app/deps/ffmpeg.sh $WINXX cross shared
-app/deps/libusb.sh $WINXX cross shared
+# app/deps/libusb.sh $WINXX cross shared
 
 DEPS_INSTALL_DIR="$PWD/app/deps/work/install/$WINXX-cross-shared"
 ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-windows"
@@ -66,6 +66,9 @@ cp app/data/open_a_terminal_here.bat "$WINXX_BUILD_DIR/dist/"
 cp "$DEPS_INSTALL_DIR"/bin/*.dll "$WINXX_BUILD_DIR/dist/"
 cp -r "$ADB_INSTALL_DIR"/. "$WINXX_BUILD_DIR/dist/"
 
+
+# copy to out test directory 
+#cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/"
 
 # copy to out test directory 
 cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/"

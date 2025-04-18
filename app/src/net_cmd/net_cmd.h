@@ -28,9 +28,11 @@ bool net_cmd_send_response(bool is_suc,
                             const char *cmd,
                             const char *content);
 
-bool net_cmd_send_request(uint16_t req_id,
+uint16_t net_cmd_send_request(
     const char *cmd,
     const char *content);
+
+void net_cmd_send_start_work_notify();
 
 // 运行事件循环(非阻塞模式，适合主循环调用)
 // 返回true表示还有事件待处理，false表示无事件

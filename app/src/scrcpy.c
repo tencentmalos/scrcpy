@@ -173,7 +173,6 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
-
     SDL_Event event;
     while (true) {
         //netevent_loop_once(ne);
@@ -413,6 +412,30 @@ scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
 
     g_used_scrcpy = &scrcpy;
+
+    //begin to start network early here
+    //start command input thread here
+    // intialize net_cmd
+    if(options->cli_service_port != 0) {
+        LOGI("Try to initialize cli service in port:%d", (int)options->cli_service_port);
+        bool is_suc = net_cmd_init();
+        if (!is_suc) {
+            // error here
+            LOGE("Can not init netevent!");
+            sc_request_exit();
+        }
+        
+        // connect to cli-tools
+        if (net_cmd_connect("127.0.0.1", options->cli_service_port) < 0) {
+            // error here
+            LOGE("Can not connect to cli service with 127.0.0.1:%d!", (int)options->cli_service_port);
+            sc_request_exit();
+        }
+    } else {
+        //Not use cli service mode here
+        ;
+    }
+
 
 #ifndef NDEBUG
     // Detect missing initializations
@@ -980,29 +1003,6 @@ aoa_complete:
         }
     }
 
-    //start command input thread here
-    // intialize net_cmd
-
-    if(options->cli_service_port != 0) {
-        LOGI("Try to initialize cli service in port:%d", (int)options->cli_service_port);
-        bool is_suc = net_cmd_init();
-        if (!is_suc) {
-            // error here
-            LOGE("Can not init netevent!");
-            sc_request_exit();
-        }
-        
-        // connect to cli-tools
-        if (net_cmd_connect("127.0.0.1", options->cli_service_port) < 0) {
-            // error here
-            LOGE("Can not connect to cli service with 127.0.0.1:%d!", (int)options->cli_service_port);
-            sc_request_exit();
-        }
-    } else {
-        //Not use cli service mode here
-        ;
-    }
-
 
     //sc_start_cmd_input_thread();
 
@@ -1010,6 +1010,9 @@ aoa_complete:
     //SDL_ShowWindow(s->screen.window);
 
     //sc_screen_force_update_one_frame(&s->screen);
+
+    //notify cli-tools scrcpy is start to work here
+    net_cmd_send_start_work_notify();
 
     ret = event_loop(s);
     terminate_event_loop();

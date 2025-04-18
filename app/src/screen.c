@@ -209,7 +209,7 @@ void sc_screen_update_content_rect_by_manual(struct sc_screen *screen, int dw, i
 
 void sc_screen_change_position_by_manual(struct sc_screen *screen, int xpos, int ypos) {
     if(screen->window == NULL) return;
-    
+
     SDL_SetWindowPosition(screen->window, xpos, ypos);
 }
 
@@ -228,7 +228,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     int dh;
 
     SDL_GetWindowSizeInPixels(screen->window, &dw, &dh);
-    LOGI("Drawable size: %dx%d", dw, dh);
+    //LOGD("Drawable size: %dx%d", dw, dh);
 
     sc_screen_update_content_rect_by_manual(screen, dw, dh);
 }
