@@ -32,7 +32,7 @@ uint16_t net_cmd_send_request(
     const char *cmd,
     const char *content);
 
-void net_cmd_send_start_work_notify();
+void net_cmd_send_check_alive();
 
 // 运行事件循环(非阻塞模式，适合主循环调用)
 // 返回true表示还有事件待处理，false表示无事件
@@ -46,6 +46,11 @@ bool net_cmd_is_running();
 
 void net_cmd_set_last_result(uint16_t req_id, uint8_t is_suc, const char* cmd, const char* result_info);
 
+int64_t net_cmd_query_now_time_ms();
+
+int64_t net_cmd_query_now_time_us();
+
+void net_cmd_set_current_fps(uint32_t fps, uint32_t skiped_fps);
 
 #ifdef __cplusplus
 }

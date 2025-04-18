@@ -173,6 +173,9 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 
 static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
+    int64_t last_check_work_time_ms = 0;
+    int64_t check_alive_period_ms = 1000;
+
     SDL_Event event;
     while (true) {
         //netevent_loop_once(ne);
@@ -200,6 +203,16 @@ event_loop(struct scrcpy *s) {
                 return SCRCPY_EXIT_FAILURE;
             }
             continue;
+        }
+
+        ///* Some times SDL_WaitEventTimeout() may be return timeout always, 
+        ///* we need detect it when cli-tools worked
+
+        //notify cli-tools scrcpy is start to work here
+        int64_t now_time_ms = net_cmd_query_now_time_ms();
+        if(now_time_ms >= last_check_work_time_ms + check_alive_period_ms) {
+            net_cmd_send_check_alive();
+            last_check_work_time_ms = now_time_ms;
         }
 
         switch (event.type) {
@@ -1011,8 +1024,6 @@ aoa_complete:
 
     //sc_screen_force_update_one_frame(&s->screen);
 
-    //notify cli-tools scrcpy is start to work here
-    net_cmd_send_start_work_notify();
 
     ret = event_loop(s);
     terminate_event_loop();

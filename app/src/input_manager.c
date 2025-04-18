@@ -148,9 +148,8 @@ static void input_cmd_callback_change_position_manual(uint16_t req_id, const cha
 static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
     struct sc_input_manager *im = (struct sc_input_manager *)userdata;
 
-    //SDL_RaiseWindow(im->screen->window);
-    
-    SDL_SetWindowAlwaysOnTop(im->screen->window, SDL_TRUE);
+    SDL_RaiseWindow(im->screen->window);
+    //SDL_SetWindowAlwaysOnTop(im->screen->window, SDL_TRUE);
 
     LOGD("raise_window called finished!");
 }

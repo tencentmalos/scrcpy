@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <sys/time.h>
 
 #include <iostream>
 #include <thread>
@@ -20,6 +21,7 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+
 
 extern "C" {
     #include "scrcpy.h"
@@ -60,7 +62,7 @@ struct netevent_command_info {
     void*                   userdata;
 };
 
-static std::map<std::string, netevent_command_info> g_netevent_command_map;
+
 
 //static std::mutex g_input_mutex;
 //static std::vector<std::string> g_cached_inputs;
@@ -73,12 +75,23 @@ struct netevent_response_info
     std::string response_result;
 };
 
+static std::map<std::string, netevent_command_info> g_netevent_command_map;
 
 netevent_response_info g_netevent_response_info;
 
-
 net_cmd_state* g_net_state = nullptr;
 uint16_t g_net_request_id_count = 0;
+
+int64_t g_net_start_usec = 0;
+
+uint32_t g_net_current_fps = 30;
+uint32_t g_net_skiped_fps = 0;
+
+
+// Helper to convert timeval to total microseconds for easier comparison
+static long long net_cmd_timeval_to_usec(struct timeval tv) {
+    return (long long)tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
 
 bool net_cmd_init(void) {
@@ -86,6 +99,10 @@ bool net_cmd_init(void) {
         LOGW("net_cmd is already work here!");
         return true;
     }
+
+    struct timeval start_time;
+    gettimeofday(&start_time, NULL);
+    g_net_start_usec = net_cmd_timeval_to_usec(start_time);
 
     struct net_cmd_state *ne = (struct net_cmd_state *)calloc(1, sizeof(*ne));
     if (!ne) return false;
@@ -299,8 +316,11 @@ uint16_t net_cmd_send_request(const char *cmd,
     return req_id;
 }
 
-void net_cmd_send_start_work_notify() {
-    net_cmd_send_request("start_work_notify", "");
+void net_cmd_send_check_alive() {
+    char buf[128] = {0};
+    sprintf(buf, "{""fps"": %d, ""skip_fps"": %d}", (int)g_net_current_fps, (int)g_net_skiped_fps);
+
+    net_cmd_send_request("check_alive", buf);
 }
 
 bool net_cmd_loop_once() {
@@ -334,4 +354,20 @@ void net_cmd_set_last_result(uint16_t req_id, uint8_t is_suc, const char* cmd, c
 }
 
 
+int64_t net_cmd_query_now_time_us() {
+    struct timeval now_time;
+    gettimeofday(&now_time, NULL);
+    int64_t us = net_cmd_timeval_to_usec(now_time);
+    return us - g_net_start_usec;
+}
+
+
+int64_t net_cmd_query_now_time_ms() {
+    return net_cmd_query_now_time_us() / 1000;
+}
+
+void net_cmd_set_current_fps(uint32_t fps, uint32_t skiped_fps) {
+    g_net_current_fps = fps;
+    g_net_skiped_fps = skiped_fps;
+}
 

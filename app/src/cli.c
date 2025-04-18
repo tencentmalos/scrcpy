@@ -2820,6 +2820,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     char *endptr;
                     opts->cli_service_port =  (uint16_t)strtoul(optarg, &endptr, 10);
                     LOGW("cli_service_port=%d", (int)opts->cli_service_port);
+
+                    opts->start_fps_counter = true;
+                    LOGW("fps counter auto start by cli mode.");
                 }
                 break;
             case OPT_NEW_DISPLAY:
