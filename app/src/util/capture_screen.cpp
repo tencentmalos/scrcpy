@@ -29,7 +29,8 @@ static bool save_screen_shot_impl(const char* filename, SDL_Renderer* renderer) 
                         #ifdef _WIN32
                              SDL_PIXELFORMAT_ABGR8888,
                         #else 
-                             SDL_PIXELFORMAT_RGBA8888,
+                             //SDL_PIXELFORMAT_ABGR8888,
+                             SDL_PIXELFORMAT_ABGR8888,
                         #endif
                              pixels.data(),
                              width * 4); 
