@@ -1061,6 +1061,8 @@ run_server(void *data) {
                             params->force_adb_forward);
     if (!ok) {
         goto error_connection_failed;
+    } else {
+        LOGD("sc_adb_tunnel_open in:%s", server->device_socket_name);
     }
 
     // server will connect to our server socket
