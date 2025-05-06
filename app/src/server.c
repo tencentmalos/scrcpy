@@ -1,19 +1,18 @@
 #include "server.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_platform.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 
 #include "adb/adb.h"
-#include "util/binary.h"
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/net_intr.h"
-#include "util/process_intr.h"
+#include "util/process.h"
 #include "util/str.h"
 
 #define SC_SERVER_FILENAME "scrcpy-server"
@@ -150,8 +149,39 @@ sc_server_get_audio_source_name(enum sc_audio_source audio_source) {
             return "mic";
         case SC_AUDIO_SOURCE_PLAYBACK:
             return "playback";
+        case SC_AUDIO_SOURCE_MIC_UNPROCESSED:
+            return "mic-unprocessed";
+        case SC_AUDIO_SOURCE_MIC_CAMCORDER:
+            return "mic-camcorder";
+        case SC_AUDIO_SOURCE_MIC_VOICE_RECOGNITION:
+            return "mic-voice-recognition";
+        case SC_AUDIO_SOURCE_MIC_VOICE_COMMUNICATION:
+            return "mic-voice-communication";
+        case SC_AUDIO_SOURCE_VOICE_CALL:
+            return "voice-call";
+        case SC_AUDIO_SOURCE_VOICE_CALL_UPLINK:
+            return "voice-call-uplink";
+        case SC_AUDIO_SOURCE_VOICE_CALL_DOWNLINK:
+            return "voice-call-downlink";
+        case SC_AUDIO_SOURCE_VOICE_PERFORMANCE:
+            return "voice-performance";
         default:
             assert(!"unexpected audio source");
+            return NULL;
+    }
+}
+
+static const char *
+sc_server_get_display_ime_policy_name(enum sc_display_ime_policy policy) {
+    switch (policy) {
+        case SC_DISPLAY_IME_POLICY_LOCAL:
+            return "local";
+        case SC_DISPLAY_IME_POLICY_FALLBACK:
+            return "fallback";
+        case SC_DISPLAY_IME_POLICY_HIDE:
+            return "hide";
+        default:
+            assert(!"unexpected display IME policy");
             return NULL;
     }
 }
@@ -376,6 +406,10 @@ execute_server(struct sc_server *server,
     if (params->new_display) {
         VALIDATE_STRING(params->new_display);
         ADD_PARAM("new_display=%s", params->new_display);
+    }
+    if (params->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
+        ADD_PARAM("display_ime_policy=%s",
+            sc_server_get_display_ime_policy_name(params->display_ime_policy));
     }
     if (!params->vd_destroy_content) {
         ADD_PARAM("vd_destroy_content=false");
