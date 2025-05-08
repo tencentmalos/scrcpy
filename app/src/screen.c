@@ -674,7 +674,7 @@ sc_screen_init_size(struct sc_screen *screen) {
     struct sc_size content_size =
         get_oriented_size(screen->frame_size, screen->orientation);
     screen->content_size = content_size;
-    screen->eye_mode = SC_EYE_MODE_LEFT;
+    screen->eye_mode = SC_EYE_MODE_TWOEYES;
 
     enum sc_display_result res =
         sc_display_set_texture_size(&screen->display, screen->frame_size);

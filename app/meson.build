@@ -175,6 +175,8 @@ conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
+warning('->server debugger', get_option('server_debugger'))
+
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
 

@@ -53,6 +53,7 @@ meson setup "$WINXX_BUILD_DIR" \
     --buildtype=debug \
     -Db_lto=false \
     -Dcompile_server=false \
+    -Dserver_debugger=true \
     -Dportable=true
 
 

@@ -118,11 +118,11 @@ public final class DisplayManager {
     public DisplayInfo getDisplayInfo(int displayId) {
         try {
             //Handle sparrow here
-            if(SpatialUtils.isPicoDevice()) {
-                // fallback when displayInfo is null
-                Ln.i("Fallback to getDisplayInfoFromDumpsysDisplay() for pico!");
-                return getDisplayInfoFromDumpsysDisplay(displayId);
-            }
+            //if(SpatialUtils.isPicoDevice()) {
+            //    // fallback when displayInfo is null
+            //    Ln.i("Fallback to getDisplayInfoFromDumpsysDisplay() for pico!");
+            //    return getDisplayInfoFromDumpsysDisplay(displayId);
+            //}
 
             Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
             if (displayInfo == null) {
