@@ -37,6 +37,12 @@ public class ScreenCapture extends SurfaceCapture {
     private Orientation captureOrientation;
     private final float angle;
 
+    private final float crop1Angle = 90;
+    private final float crop2Angle = 90;
+
+    private boolean crop1NeedRotate = false;
+    private boolean crop2NeedRotate = false;
+
     private DisplayInfo displayInfo;
     private Size videoSize; // Will become the combined output size
     private Size videoSize1; // Size of the first cropped region after orientation
@@ -49,6 +55,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     private AffineMatrix transform1; // Transform for the first region
     private AffineMatrix transform2; // Transform for the second region
+    // private boolean layoutSwapsWH = false; // Removed: always horizontal concatenation
     private OpenGLRunner glRunner;
 
     public ScreenCapture(VirtualDisplayListener vdListener, Options options) {
@@ -63,6 +70,7 @@ public class ScreenCapture extends SurfaceCapture {
         assert captureOrientationLock != null;
         assert captureOrientation != null;
         this.angle = options.getAngle();
+
     }
 
     @Override
@@ -113,6 +121,8 @@ public class ScreenCapture extends SurfaceCapture {
         } else {
             // Dual region crop
             // Process first crop region
+            //transposed = true;
+
             VideoFilter filter1 = new VideoFilter(displaySize);
             if (crop != null) {
                 filter1.addCrop(crop, transposed);
@@ -124,31 +134,51 @@ public class ScreenCapture extends SurfaceCapture {
                 // For simplicity now, if crop is null, size1 will be 0x0.
                 filter1.addCrop(new Rect(0, 0, 0, 0), transposed); // Effectively a zero-size crop
             }
-            filter1.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
-            filter1.addAngle(angle); // Apply global angle to both
+
+
+            int crop1Rotation = 1;
+            int crop2Rotation = 1;
+
+            if(crop1Angle == 90 || crop1Angle == 270) {
+                crop1NeedRotate = true;
+            }
+
+            if(crop2Angle == 90 || crop2Angle == 270) {
+                crop2NeedRotate = true;
+            }
+
+            filter1.addOrientation(crop1Rotation, locked, captureOrientation);
+            filter1.addAngle(crop1Angle); // Apply global angle to both
             videoSize1 = filter1.getOutputSize().round8();
+            if(crop1NeedRotate) {
+                videoSize1 = videoSize1.rotate();
+            }
             transform1 = filter1.getInverseTransform();
 
             // Process second crop region
             VideoFilter filter2 = new VideoFilter(displaySize);
             filter2.addCrop(crop2, transposed); // crop2 is guaranteed not null here
-            filter2.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
-            filter2.addAngle(angle); // Apply global angle to both
+            filter2.addOrientation(crop2Rotation, locked, captureOrientation);
+            filter2.addAngle(crop2Angle); // Apply global angle to both
             videoSize2 = filter2.getOutputSize().round8();
+            if(crop2NeedRotate){
+                videoSize2 = videoSize2.rotate();
+            }
             transform2 = filter2.getInverseTransform();
 
-            // Calculate combined videoSize for horizontal concatenation
-            int combinedWidth = videoSize1.getWidth() + videoSize2.getWidth();
-            int combinedHeight = Math.max(videoSize1.getHeight(), videoSize2.getHeight());
-            if (combinedHeight == 0 && crop != null) { // if crop1 was null, but crop2 wasn't, use crop2's height
-                combinedHeight = videoSize2.getHeight();
-            }
-            if (combinedHeight == 0 && crop2 != null && crop == null) { // if crop2 was null, but crop1 wasn't, use crop1's height
-                combinedHeight = videoSize1.getHeight();
-            }
+            // Always concatenate horizontally the (already individually rotated) regions
+            int w1 = videoSize1.getWidth();
+            int h1 = videoSize1.getHeight();
+            int w2 = videoSize2.getWidth();
+            int h2 = videoSize2.getHeight();
 
-            videoSize = new Size(combinedWidth, combinedHeight).round8();
-            //videoSize = new Size(combinedWidth, combinedHeight).limit(maxSize).round8();
+            int combinedWidth = w1 + w2;
+            int combinedHeight = Math.max(h1, h2);
+            // If one region is 0-height (e.g. 0x0 crop), and the other is not, max will correctly pick the non-zero height.
+            // If both are 0-height, combinedHeight will be 0.
+
+            videoSize = new Size(combinedWidth, combinedHeight).round8(); // Ensure .limit(maxSize) is applied
+            //videoSize = new Size(combinedWidth, combinedHeight).limit(maxSize).round8(); // Ensure .limit(maxSize) is applied
 
             Ln.w(String.format("Crop2 runing, displaySize: %d x %d", displaySize.getWidth(), displaySize.getHeight()));
             Ln.w(String.format("Crop2 runing, videoSize1: %d x %d", videoSize1.getWidth(), videoSize1.getHeight()));
@@ -178,13 +208,13 @@ public class ScreenCapture extends SurfaceCapture {
                 // Dual crop mode: This will require a new or modified OpenGL filter and runner
                 // For now, this will likely fail or render incorrectly as AffineOpenGLFilter expects one transform.
                 // Placeholder for MultiRegionOpenGLFilter
-                Ln.w("Dual crop rendering not fully implemented in OpenGL stage yet.");
+                Ln.w("Dual crop rendering now enabled here.");
                 // We'll pass transform1 for now, which will render only the first region,
                 // but the videoSize is the combined one. This will look weird but tests the pipeline.
                 // OpenGLFilter glFilter = new AffineOpenGLFilter(transform1); // Old line
-                OpenGLFilter glFilter = new MultiRegionOpenGLFilter(transform1, videoSize1, transform2, videoSize2);
+                OpenGLFilter glFilter = new MultiRegionOpenGLFilter(transform1, videoSize1, transform2, videoSize2); // Removed last boolean argument
                 glRunner = new OpenGLRunner(glFilter);
-                // The OpenGLRunner will render to the 'videoSize' (combined).
+                 // The OpenGLRunner will render to the 'videoSize' (combined).
                 // The glFilter (AffineOpenGLFilter) will use transform1 to source from inputSize.
                 // The actual drawing area within videoSize for this first region would be videoSize1.
                 // This setup is temporary.

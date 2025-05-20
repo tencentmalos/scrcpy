@@ -34,7 +34,7 @@ public class MultiRegionOpenGLFilter implements OpenGLFilter {
     private int texMatrixLoc;
     private int userMatrixLoc;
 
-    public MultiRegionOpenGLFilter(AffineMatrix transform1, Size region1Size, AffineMatrix transform2, Size region2Size) {
+    public MultiRegionOpenGLFilter(AffineMatrix transform1, Size region1Size, AffineMatrix transform2, Size region2Size) { // Removed concatenateVertically
         if (transform1 != null) {
             this.userMatrix1 = transform1.to4x4();
         } else {
@@ -51,10 +51,12 @@ public class MultiRegionOpenGLFilter implements OpenGLFilter {
         } else {
             this.userMatrix2 = AffineMatrix.IDENTITY.to4x4();
         }
-        this.viewport2X = this.viewport1Width; // Place viewport2 immediately to the right of viewport1
+
+        // Always horizontal concatenation
+        this.viewport2X = (this.viewport1Width > 0) ? this.viewport1Width : 0;
         this.viewport2Y = 0;
-        this.viewport2Width = region2Size != null ? region2Size.getWidth() : 0;
-        this.viewport2Height = region2Size != null ? region2Size.getHeight() : 0;
+        this.viewport2Width = (region2Size != null && region2Size.getWidth() > 0 && region2Size.getHeight() > 0) ? region2Size.getWidth() : 0;
+        this.viewport2Height = (region2Size != null && region2Size.getWidth() > 0 && region2Size.getHeight() > 0) ? region2Size.getHeight() : 0;
     }
 
     @Override
