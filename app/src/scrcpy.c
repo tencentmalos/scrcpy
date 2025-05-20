@@ -503,6 +503,7 @@ scrcpy(struct scrcpy_options *options) {
         .audio_source = options->audio_source,
         .camera_facing = options->camera_facing,
         .crop = options->crop,
+        .crop_region2 = options->crop_region2,
         .port_range = options->port_range,
         .tunnel_host = options->tunnel_host,
         .tunnel_port = options->tunnel_port,

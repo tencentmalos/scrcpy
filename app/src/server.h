@@ -28,6 +28,7 @@ struct sc_server_params {
     enum sc_audio_source audio_source;
     enum sc_camera_facing camera_facing;
     const char *crop;
+    const char *crop_region2; // Added for second crop region
     const char *video_codec_options;
     const char *audio_codec_options;
     const char *video_encoder;

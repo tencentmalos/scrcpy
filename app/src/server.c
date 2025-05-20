@@ -327,6 +327,12 @@ execute_server(struct sc_server *server,
     if (params->crop) {
         VALIDATE_STRING(params->crop);
         ADD_PARAM("crop=%s", params->crop);
+        LOGW("crop region1 setting here: %s", params->crop);
+    }
+    if (params->crop_region2) {
+        VALIDATE_STRING(params->crop_region2);
+        ADD_PARAM("crop_region2=%s", params->crop_region2);
+        LOGW("crop region2 setting here: %s", params->crop_region2);
     }
     if (!params->control) {
         // By default, control is true

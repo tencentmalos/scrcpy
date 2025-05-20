@@ -230,6 +230,7 @@ struct sc_port_range {
 struct scrcpy_options {
     const char *serial;
     const char *crop;
+    const char *crop_region2; // Added for second crop region
     const char *record_filename;
     const char *window_title;
     const char *push_target;

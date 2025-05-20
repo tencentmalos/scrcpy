@@ -101,6 +101,15 @@ public final class GLUtils {
         }
     }
 
+    public static void checkGlError(String message) {
+        if (DEBUG) {
+            int error = GLES20.glGetError();
+            if (error != GLES20.GL_NO_ERROR) {
+                throw new RuntimeException(message + " with error:" + toErrorString(error));
+            }
+        }
+    }
+
     public static String getGlErrorMessage(String userError) {
         int glError = GLES20.glGetError();
         if (glError == GLES20.GL_NO_ERROR) {

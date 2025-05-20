@@ -25,6 +25,7 @@ enum {
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
     OPT_CROP,
+    OPT_CROP_REGION2, // Added for second crop region
     OPT_RECORD_FORMAT,
     OPT_PREFER_TEXT,
     OPT_WINDOW_X,
@@ -354,6 +355,12 @@ static const struct sc_option options[] = {
         .text = "Crop the device screen on the server.\n"
                 "The values are expressed in the device natural orientation "
                 "(typically, portrait for a phone, landscape for a tablet).",
+    },
+    {
+        .longopt_id = OPT_CROP_REGION2,
+        .longopt = "crop-region2",
+        .argdesc = "width:height:x:y",
+        .text = "Crop a second region of the device screen on the server.",
     },
     {
         .shortopt = 'd',
@@ -2393,6 +2400,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CROP:
                 opts->crop = optarg;
+                break;
+            case OPT_CROP_REGION2:
+                opts->crop_region2 = optarg;
+                LOGW("crop region2 params recieve:%s", optarg);
                 break;
             case OPT_DISPLAY:
                 LOGE("--display has been removed, use --display-id instead.");

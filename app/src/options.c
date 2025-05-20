@@ -1,10 +1,12 @@
 #include "options.h"
 
 #include <stddef.h>
+#include "util/net.h" // Added for port range defaults
 
 const struct scrcpy_options scrcpy_options_default = {
     .serial = NULL,
     .crop = NULL,
+    .crop_region2 = NULL, // Added for second crop region
     .record_filename = NULL,
     .window_title = NULL,
     .push_target = NULL,

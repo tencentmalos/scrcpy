@@ -78,6 +78,8 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.angle = options.getAngle();
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
+
+        Ln.w("NewDisplayCapture worked here!");
     }
 
     @Override
