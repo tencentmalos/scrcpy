@@ -104,11 +104,18 @@ public class MultiRegionOpenGLFilter implements OpenGLFilter {
         };
 
         // Standard texture coordinates for sampling the input texture
+//        float[] texCoords = {
+//                0, 0, // Bottom-left
+//                1, 0, // Bottom-right
+//                0, 1, // Top-left
+//                1, 1, // Top-right
+//        };
+
         float[] texCoords = {
-                0, 0, // Bottom-left
-                1, 0, // Bottom-right
-                0, 1, // Top-left
-                1, 1, // Top-right
+                1, 0, // Bottom-left
+                1, 1, // Bottom-right
+                0, 0, // Top-left
+                0, 1, // Top-right
         };
 
         vertexBuffer = GLUtils.createFloatBuffer(vertices);

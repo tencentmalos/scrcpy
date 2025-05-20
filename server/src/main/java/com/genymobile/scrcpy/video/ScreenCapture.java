@@ -37,11 +37,13 @@ public class ScreenCapture extends SurfaceCapture {
     private Orientation captureOrientation;
     private final float angle;
 
-    private final float crop1Angle = 90;
-    private final float crop2Angle = 90;
+    private final float crop1Angle = 0;
+    private final float crop2Angle = 0;
 
-    private boolean crop1NeedRotate = false;
-    private boolean crop2NeedRotate = false;
+    private final boolean needRotateWHIn2Crops = true;
+
+//    private boolean crop1NeedRotate = false;
+//    private boolean crop2NeedRotate = false;
 
     private DisplayInfo displayInfo;
     private Size videoSize; // Will become the combined output size
@@ -139,18 +141,10 @@ public class ScreenCapture extends SurfaceCapture {
             int crop1Rotation = 1;
             int crop2Rotation = 1;
 
-            if(crop1Angle == 90 || crop1Angle == 270) {
-                crop1NeedRotate = true;
-            }
-
-            if(crop2Angle == 90 || crop2Angle == 270) {
-                crop2NeedRotate = true;
-            }
-
             filter1.addOrientation(crop1Rotation, locked, captureOrientation);
             filter1.addAngle(crop1Angle); // Apply global angle to both
             videoSize1 = filter1.getOutputSize().round8();
-            if(crop1NeedRotate) {
+            if(needRotateWHIn2Crops) {
                 videoSize1 = videoSize1.rotate();
             }
             transform1 = filter1.getInverseTransform();
@@ -161,7 +155,7 @@ public class ScreenCapture extends SurfaceCapture {
             filter2.addOrientation(crop2Rotation, locked, captureOrientation);
             filter2.addAngle(crop2Angle); // Apply global angle to both
             videoSize2 = filter2.getOutputSize().round8();
-            if(crop2NeedRotate){
+            if(needRotateWHIn2Crops){
                 videoSize2 = videoSize2.rotate();
             }
             transform2 = filter2.getInverseTransform();
