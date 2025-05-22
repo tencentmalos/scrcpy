@@ -41,3 +41,5 @@ cp "$MACOS_BUILD_DIR"/app/scrcpy "$MACOS_BUILD_DIR/dist/"
 cp app/data/icon.png "$MACOS_BUILD_DIR/dist/"
 cp app/scrcpy.1 "$MACOS_BUILD_DIR/dist/"
 cp -r "$ADB_INSTALL_DIR"/. "$MACOS_BUILD_DIR/dist/"
+
+cp -r "$MACOS_BUILD_DIR/dist/." "/Users/bytedance/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/"

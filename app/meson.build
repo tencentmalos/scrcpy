@@ -66,6 +66,7 @@ src = [
     'src/util/timeout.c',
     'src/util/cmd_input.cpp',
     'src/util/capture_screen.cpp',
+    'src/util/work_dir.cpp',
 ]
 
 conf = configuration_data()

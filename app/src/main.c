@@ -175,3 +175,42 @@ int sc_run_as_dll_mode(const char* arginfo)
     return ret;
 }
 
+
+enum scrcpy_exit_code
+sc_run_with_options(struct scrcpy_options *options) {
+#ifdef _WIN32
+    // disable buffering, we want logs immediately
+    // even line buffering (setvbuf() with mode _IOLBF) is not sufficient
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
+#endif
+
+    sc_set_log_level(options->log_level);
+
+    // The current thread is the main thread
+    SC_MAIN_THREAD_ID = sc_thread_get_id();
+
+#ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
+    av_register_all();
+#endif
+
+#ifdef HAVE_V4L2
+    if (options->v4l2_device) {
+        avdevice_register_all();
+    }
+#endif
+
+    if (!net_init()) {
+        return SCRCPY_EXIT_FAILURE;
+    }
+
+    sc_log_configure();
+
+#ifdef HAVE_USB
+    enum scrcpy_exit_code ret = options->otg ? scrcpy_otg(options) : scrcpy(options);
+#else
+    enum scrcpy_exit_code ret = scrcpy(options);
+#endif
+
+    return ret;
+}
