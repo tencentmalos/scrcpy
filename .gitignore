@@ -11,3 +11,4 @@ local.properties
 .vscode/c_cpp_properties.json
 .DS_Store
 .vscode
+app/deps/work/build

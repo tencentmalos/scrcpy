@@ -294,6 +294,14 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   enum sc_orientation orientation, struct sc_size content_size, enum sc_eye_mode eye_mode) {
+
+    SDL_Rect vp;
+    vp.x = 100;
+    vp.y = 100;
+    vp.w = 100;
+    vp.h = 100;
+    SDL_RenderSetViewport(display->renderer, &vp);
+                    
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {

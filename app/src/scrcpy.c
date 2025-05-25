@@ -581,15 +581,14 @@ scrcpy(struct scrcpy_options *options) {
         // --no-video-playback is passed so that clipboard synchronization
         // still works.
         // <https://github.com/Genymobile/scrcpy/issues/4418>
-        if(!options->sdl_preinit_mode) {
-            if (SDL_Init(SDL_INIT_VIDEO)) {
-                // If it fails, it is an error only if video playback is enabled
-                if (options->video_playback) {
-                    LOGE("Could not initialize SDL video: %s", SDL_GetError());
-                    goto end;
-                } else {
-                    LOGW("Could not initialize SDL video: %s", SDL_GetError());
-                }
+
+        if (SDL_Init(SDL_INIT_VIDEO)) {
+            // If it fails, it is an error only if video playback is enabled
+            if (options->video_playback) {
+                LOGE("Could not initialize SDL video: %s", SDL_GetError());
+                goto end;
+            } else {
+                LOGW("Could not initialize SDL video: %s", SDL_GetError());
             }
         }
     }
@@ -1361,15 +1360,13 @@ scrcpy_step_mode_init(struct scrcpy_options *options) {
         // --no-video-playback is passed so that clipboard synchronization
         // still works.
         // <https://github.com/Genymobile/scrcpy/issues/4418>
-        if(!options->sdl_preinit_mode) {
-            if (SDL_Init(SDL_INIT_VIDEO)) {
-                // If it fails, it is an error only if video playback is enabled
-                if (options->video_playback) {
-                    LOGE("Could not initialize SDL video: %s", SDL_GetError());
-                    return SCRCPY_EXIT_FAILURE;
-                } else {
-                    LOGW("Could not initialize SDL video: %s", SDL_GetError());
-                }
+        if (SDL_Init(SDL_INIT_VIDEO)) {
+            // If it fails, it is an error only if video playback is enabled
+            if (options->video_playback) {
+                LOGE("Could not initialize SDL video: %s", SDL_GetError());
+                return SCRCPY_EXIT_FAILURE;
+            } else {
+                LOGW("Could not initialize SDL video: %s", SDL_GetError());
             }
         }
     }
@@ -1952,9 +1949,6 @@ end:
 
 
 //------------------------------------------------
-int sc_preinit_sdl() {
-    return SDL_Init(SDL_INIT_VIDEO);
-}
 
 void sc_request_exit() {
     if(g_used_scrcpy == NULL) return;
@@ -1994,7 +1988,6 @@ sc_step_mode_init(const char* work_directory,
 
     struct scrcpy_options options = scrcpy_options_default;
 
-    options.sdl_preinit_mode = true;
     options.external_window_handle = parent_window_handle;
     options.cli_service_port = cli_service_port;
 

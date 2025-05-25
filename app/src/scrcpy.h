@@ -52,6 +52,6 @@ SC_EXPORT enum scrcpy_exit_code sc_step_mode_exit();
 
 SC_EXPORT void sc_request_exit();
 
-SC_EXPORT int sc_preinit_sdl();
+
 
 #endif

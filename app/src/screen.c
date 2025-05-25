@@ -442,7 +442,7 @@ sc_screen_init(struct sc_screen *screen,
         int tmpheight;
         SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
 
-        //LOGI("Create SDL Window by external mode. size is %d x %d .", tmpwidth, tmpheight);
+        LOGI("Create SDL Window by external mode. size is %d x %d .", tmpwidth, tmpheight);
     } else {
         LOGI("Create SDL Window by default mode.");
         screen->is_external_window = false;
@@ -917,8 +917,13 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    LOGI("scrcpy window resized");
-                    sc_screen_render(screen, true);
+                    {
+                        int tmpwidth;
+                        int tmpheight;
+                        SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
+                        LOGI("scrcpy window resized: %d x %d", tmpwidth, tmpheight);
+                        sc_screen_render(screen, true);
+                    }
                     break;
                 case SDL_WINDOWEVENT_MAXIMIZED:
                     screen->maximized = true;
