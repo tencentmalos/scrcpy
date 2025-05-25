@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ScrcpyImageViewer.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="ScrcpyImageViewer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Scrcpy Image Viewer">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 控制面板 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
+            <TextBlock Text="共享内存名称:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding SharedMemoryName}" Width="200" Margin="0,0,10,0"/>
+            
+            <Button Content="{Binding ConnectButtonText}" 
+                    Command="{Binding ToggleConnectionCommand}" 
+                    Margin="0,0,10,0"/>
+            
+            <TextBlock Text="{Binding StatusText}" 
+                       VerticalAlignment="Center" 
+                       Foreground="{Binding StatusColor}"/>
+        </StackPanel>
+
+        <!-- 图像显示区域 -->
+        <Border Grid.Row="1" 
+                Background="Black" 
+                Margin="10">
+            <Viewbox Stretch="Uniform">
+                <Image Source="{Binding CurrentImage}" 
+                       RenderOptions.BitmapInterpolationMode="HighQuality"/>
+            </Viewbox>
+        </Border>
+
+        <!-- 状态栏 -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    Background="LightGray" 
+                    Margin="0">
+            <TextBlock Text="{Binding FrameInfo}" 
+                       Margin="10,5" 
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="|" 
+                       Margin="5" 
+                       VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding FpsInfo}" 
+                       Margin="5" 
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+
+</Window>

@@ -101,6 +101,8 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
     display->pending.flags = 0;
     display->pending.frame = NULL;
     display->has_frame = false;
+    display->last_updated_frame_count = 0;
+    display->copy_shared_frame_index = 0;
 
     if (icon_novideo) {
         // Without video, set a static scrcpy icon as window content
@@ -368,8 +370,9 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
 
     SDL_RenderPresent(display->renderer);
 
-    if(display->image_transmitter->enabled &&
-        display->copy_shared_frame_index != display->last_updated_frame_count) {
+    bool frame_not_same = (display->copy_shared_frame_index != display->last_updated_frame_count);
+    if(display->image_transmitter->enabled && frame_not_same) 
+    {
         //Do image shared here
         sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
 

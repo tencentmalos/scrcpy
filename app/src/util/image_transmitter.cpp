@@ -26,9 +26,9 @@ bool sc_image_transmitter_init(struct sc_image_transmitter *transmitter,
     // 计算共享内存大小（头部 + 最大帧大小）
     transmitter->shm_size = sizeof(struct sc_frame_header) + max_frame_size;
     
-    // 创建共享内存
-    if (!sc_shared_memory_create(&transmitter->shm, shm_name, transmitter->shm_size)) {
-        LOGE("Failed to create shared memory for image transmitter");
+    // 创建文件映射
+    if (!sc_file_mapping_create(&transmitter->mapping, shm_name, transmitter->shm_size)) {
+        LOGE("Failed to create file mapping for image transmitter");
         return false;
     }
     
@@ -37,14 +37,14 @@ bool sc_image_transmitter_init(struct sc_image_transmitter *transmitter,
     transmitter->rgb_buffer = (uint8_t*)malloc(transmitter->rgb_buffer_size);
     if (!transmitter->rgb_buffer) {
         LOGE("Failed to allocate RGB buffer");
-        sc_shared_memory_destroy(&transmitter->shm);
+        sc_file_mapping_destroy(&transmitter->mapping);
         return false;
     }
     
-    transmitter->enabled = false;
+    transmitter->enabled = true;
     transmitter->frame_sequence = 0;
     
-    LOGI("Image transmitter initialized: %s, size: %zu", shm_name, transmitter->shm_size);
+    LOGI("Image transmitter initialized: %s, head: %d, total size: %zu", shm_name, sizeof(struct sc_frame_header), transmitter->shm_size);
     return true;
 }
 
@@ -58,7 +58,7 @@ void sc_image_transmitter_destroy(struct sc_image_transmitter *transmitter) {
         transmitter->rgb_buffer = NULL;
     }
     
-    sc_shared_memory_destroy(&transmitter->shm);
+    sc_file_mapping_destroy(&transmitter->mapping);
     
     memset(transmitter, 0, sizeof(*transmitter));
     LOGI("Image transmitter destroyed");
@@ -109,12 +109,12 @@ bool sc_image_transmitter_send_frame(struct sc_image_transmitter *transmitter,  
     gettimeofday(&tv, NULL);
     header.timestamp = (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
     
-    header.reserved[0] = 0;
-    header.reserved[1] = 0;
+    header.reserved0 = 0;
+    header.reserved1 = 0;
     
-    // 写入共享内存
-    if (!sc_shared_memory_write_frame(&transmitter->shm, &header, transmitter->rgb_buffer)) {
-        LOGE("Failed to write frame to shared memory");
+    // 写入文件映射
+    if (!sc_file_mapping_write_frame(&transmitter->mapping, &header, transmitter->rgb_buffer)) {
+        LOGE("Failed to write frame to file mapping");
         return false;
     }
     

@@ -50,9 +50,19 @@
             "program": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/scrcpy",
             //"program": "${workspaceFolder}/release/work/build-win64/dist/scrcpy.exe",
             "args": [
+                "-s",
+                "2d6171b6",
+                "--show-touches",
+                "--window-title=cli-haotian-2d6171b6",
+                "--video-codec=h265",
+                "--keyboard=uhid",
+                "--mouse=sdk",
+                "--stay-awake",
                 "--max-size=1920",
-                "--external-window-handle=6139597248", 
-                "--no-audio"
+                "--max-fps=30",
+                "--enable_shared_image",
+                "--no-audio",
+                "--cli_service_port=5566",
                 ],
             "cwd": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0",
             //"preLaunchTask": "build", 
@@ -60,5 +70,24 @@
             "externalConsole": false,
             "MIMode": "lldb"
         }
+        ,
+        {
+            "name": "cli-tools debugger",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliDesktopApp/bin/Debug/net8.0/CliDesktopApp",
+            //"program": "${workspaceFolder}/release/work/build-win64/dist/scrcpy.exe",
+            "args": [
+                "--max-size=1920",
+                "--external-window-handle=6139597248", 
+                "--no-audio"
+                ],
+            "cwd": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliDesktopApp/bin/Debug/net8.0/",
+            //"preLaunchTask": "build", 
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb"
+        }
+
     ]
 }

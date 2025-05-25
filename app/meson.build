@@ -68,6 +68,7 @@ src = [
     'src/util/capture_screen.cpp',
     'src/util/image_transmitter.cpp',
     'src/util/shared_memory.c',
+    'src/util/file_mapping.c',
     'src/util/env.c',
     'src/util/work_dir.cpp',
 ]

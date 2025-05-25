@@ -428,6 +428,11 @@ enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
 
+#ifndef NDEBUG
+    // Detect missing initializations
+    memset(&scrcpy, 42, sizeof(scrcpy));
+#endif
+
     g_used_scrcpy = &scrcpy;
 
     //Env settings here
@@ -483,11 +488,6 @@ scrcpy(struct scrcpy_options *options) {
         ;
     }
 
-
-#ifndef NDEBUG
-    // Detect missing initializations
-    memset(&scrcpy, 42, sizeof(scrcpy));
-#endif
     struct scrcpy *s = &scrcpy;
 
     // Minimal SDL initialization
