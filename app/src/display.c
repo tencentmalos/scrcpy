@@ -5,7 +5,10 @@
 #include <string.h>
 #include <libavutil/pixfmt.h>
 
+#include "util/image_transmitter.h"
+
 #include "util/log.h"
+
 
 static bool
 sc_display_init_novideo_icon(struct sc_display *display,
@@ -30,7 +33,8 @@ sc_display_init_novideo_icon(struct sc_display *display,
 
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
-                SDL_Surface *icon_novideo, bool mipmaps) {
+                SDL_Surface *icon_novideo, bool mipmaps,
+                struct sc_image_transmitter* image_transmitter) {
     display->renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!display->renderer) {
@@ -44,6 +48,8 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
     display->mipmaps = false;
+
+    display->image_transmitter = image_transmitter;
 
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
     display->gl_context = NULL;
@@ -286,7 +292,9 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
         }
 
         return SC_DISPLAY_RESULT_PENDING;
-    }
+    } 
+
+    display->last_updated_frame_count++;
 
     return SC_DISPLAY_RESULT_OK;
 }
@@ -359,5 +367,14 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     }
 
     SDL_RenderPresent(display->renderer);
+
+    if(display->image_transmitter->enabled &&
+        display->copy_shared_frame_index != display->last_updated_frame_count) {
+        //Do image shared here
+        sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
+
+        display->copy_shared_frame_index = display->last_updated_frame_count;
+    }
+
     return SC_DISPLAY_RESULT_OK;
 }

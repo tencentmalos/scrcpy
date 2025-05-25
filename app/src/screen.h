@@ -74,6 +74,8 @@ struct sc_screen {
     AVFrame *resume_frame;
 
     enum sc_eye_mode eye_mode;
+
+    struct sc_image_transmitter *image_transmitter;
 };
 
 struct sc_screen_params {
@@ -108,6 +110,8 @@ struct sc_screen_params {
 
     uint64_t external_window_handle;
     uint16_t cli_service_port;
+
+    struct sc_image_transmitter* image_transmitter;
 };
 
 int sc_test_add(int a, int b);

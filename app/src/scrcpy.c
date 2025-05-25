@@ -47,6 +47,9 @@
 #endif
 
 #include "net_cmd/net_cmd.h"
+#include "util/image_transmitter.h"
+#include "util/env.h"
+#include "util/work_dir.h"
 
 
 struct scrcpy {
@@ -93,6 +96,7 @@ struct scrcpy {
 #endif
     };
     struct sc_timeout timeout;
+    struct sc_image_transmitter image_transmitter;
 };
 
 struct scrcpy* g_used_scrcpy = NULL;
@@ -426,6 +430,25 @@ scrcpy(struct scrcpy_options *options) {
 
     g_used_scrcpy = &scrcpy;
 
+    //Env settings here
+    printf("init work dir is:%s \n", sc_query_work_directory());
+
+    //if(options->run_path != NULL) 
+    {
+        const char* work_directory = sc_query_work_directory();
+
+        const char* adb_path = sc_combine_path(work_directory, "adb");
+        printf("current adb dir is:%s \n", adb_path);
+
+        sc_set_env("ADB", adb_path, 1);
+
+        const char* scrcpy_server_path = sc_combine_path(work_directory, "scrcpy-server");
+        sc_set_env("SCRCPY_SERVER_PATH", scrcpy_server_path, 1);
+
+        const char* scrcpy_icon_path = sc_combine_path(work_directory, "icon.png");
+        sc_set_env("SCRCPY_ICON_PATH", scrcpy_icon_path, 1);
+    }
+
     //begin to start network early here
     //start command input thread here
     // intialize net_cmd
@@ -443,6 +466,17 @@ scrcpy(struct scrcpy_options *options) {
             // error here
             LOGE("Can not connect to cli service with 127.0.0.1:%d!", (int)options->cli_service_port);
             sc_request_exit();
+        }
+        
+        
+        char shm_name[64];
+        snprintf(shm_name, sizeof(shm_name), "scrcpy_frames_%d", (int)options->cli_service_port);
+        size_t max_frame_size = 8192 * 8192 * 4; // 8k*8k RGB32
+        
+        if (!sc_image_transmitter_init(&scrcpy.image_transmitter, shm_name, max_frame_size)) {
+            LOGE("Failed to initialize image transmitter");
+        } else {
+            LOGI("Image transmitter initialized successfully");
         }
     } else {
         //Not use cli service mode here
@@ -897,6 +931,7 @@ aoa_complete:
             .start_fps_counter = options->start_fps_counter,
             .external_window_handle = options->external_window_handle,
             .cli_service_port = options->cli_service_port,
+            .image_transmitter = &s->image_transmitter,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -1029,6 +1064,11 @@ aoa_complete:
     ret = event_loop(s);
     terminate_event_loop();
     LOGD("quit...");
+
+    //stop image transmitter here
+    if(s->image_transmitter.enabled) {
+        sc_image_transmitter_destroy(&s->image_transmitter);
+    }
 
     //stop command input thread here
     if(options->cli_service_port != 0) {

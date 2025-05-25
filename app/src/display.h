@@ -12,6 +12,8 @@
 #include "opengl.h"
 #include "options.h"
 
+#include "util/image_transmitter.h"
+
 #ifdef __APPLE__
 # define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
 #endif
@@ -19,6 +21,7 @@
 struct sc_display {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+    struct sc_image_transmitter* image_transmitter;
 
     struct sc_opengl gl;
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -36,6 +39,9 @@ struct sc_display {
     } pending;
 
     bool has_frame;
+
+    uint64_t last_updated_frame_count;
+    uint64_t copy_shared_frame_index;
 };
 
 enum sc_display_result {
@@ -52,7 +58,8 @@ enum sc_eye_mode {
 
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
-                SDL_Surface *icon_novideo, bool mipmaps);
+                SDL_Surface *icon_novideo, bool mipmaps, 
+                struct sc_image_transmitter* image_transmitter);
 
 void
 sc_display_destroy(struct sc_display *display);

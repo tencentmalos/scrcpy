@@ -117,6 +117,8 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_ENABLE_SHARED_IMAGE,
+    OPT_RUN_PATH,
 };
 
 struct sc_option {
@@ -474,6 +476,16 @@ static const struct sc_option options[] = {
         .longopt = "cli_service_port",
         .argdesc = "value",
         .text = "connect scrcpy to cli service by tcp port",
+    },
+    {
+        .longopt_id = OPT_ENABLE_SHARED_IMAGE,
+        .longopt = "enable_shared_image",
+        .text = "enable shared image mode",
+    },
+        {
+        .longopt_id = OPT_RUN_PATH,
+        .longopt = "run_path",
+        .text = "set the running path for find adb/server/icons here",
     },
     {
         .shortopt = 'h',
@@ -2834,6 +2846,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
                     opts->start_fps_counter = true;
                     LOGW("fps counter auto start by cli mode.");
+                }
+                break;
+            case OPT_ENABLE_SHARED_IMAGE:
+                {
+                    opts->enable_shared_image = true;
+                    LOGW("now shared image mode is enabled.");
+                }
+                break;
+            case OPT_RUN_PATH:
+                {
+                    opts->run_path = optarg;
+                    LOGW("running path:%s", opts->run_path);
                 }
                 break;
             case OPT_NEW_DISPLAY:

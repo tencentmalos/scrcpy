@@ -330,6 +330,10 @@ struct scrcpy_options {
     const char *start_app;
     bool vd_destroy_content;
     bool vd_system_decorations;
+
+    bool enable_shared_image;
+
+    const char* run_path;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

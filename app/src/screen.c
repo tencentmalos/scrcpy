@@ -382,6 +382,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
+    screen->image_transmitter = params->image_transmitter;
+
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
         return false;
@@ -476,7 +478,7 @@ sc_screen_init(struct sc_screen *screen,
     SDL_Surface *icon_novideo = params->video ? NULL : icon;
     bool mipmaps = params->video && params->mipmaps;
     ok = sc_display_init(&screen->display, screen->window, icon_novideo,
-                         mipmaps);
+                         mipmaps, screen->image_transmitter);
     if (icon) {
         scrcpy_icon_destroy(icon);
     }
