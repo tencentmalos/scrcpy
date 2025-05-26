@@ -28,18 +28,18 @@ bool sc_shared_memory_create(struct sc_shared_memory *shm, const char *name, siz
     memset(shm, 0, sizeof(*shm));
     shm->size = size;
     
-    // 复制名称
+    // Copy name
     shm->name = strdup(name);
     if (!shm->name) {
         return false;
     }
 
 #ifdef __APPLE__
-    // macOS 使用 POSIX 共享内存
+    // macOS uses POSIX shared memory
     char shm_name[256];
     snprintf(shm_name, sizeof(shm_name), "/%s", name);
     
-    // 创建共享内存对象
+    // Create shared memory object
     shm->fd = shm_open(shm_name, O_CREAT | O_RDWR, 0666);
     if (shm->fd == -1) {
         LOGE("Failed to create shared memory: %s", shm_name);
@@ -47,7 +47,7 @@ bool sc_shared_memory_create(struct sc_shared_memory *shm, const char *name, siz
         return false;
     }
     
-    // 设置大小
+    // Set size
     if (ftruncate(shm->fd, size) == -1) {
         LOGE("Failed to set shared memory size");
         close(shm->fd);
@@ -56,7 +56,7 @@ bool sc_shared_memory_create(struct sc_shared_memory *shm, const char *name, siz
         return false;
     }
     
-    // 映射内存
+    // Map memory
     shm->data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, shm->fd, 0);
     if (shm->data == MAP_FAILED) {
         LOGE("Failed to map shared memory");
@@ -67,7 +67,7 @@ bool sc_shared_memory_create(struct sc_shared_memory *shm, const char *name, siz
     }
 
 #elif defined(_WIN32)
-    // Windows 使用文件映射
+    // Windows uses file mapping
     wchar_t wide_name[256];
     MultiByteToWideChar(CP_UTF8, 0, name, -1, wide_name, sizeof(wide_name) / sizeof(wchar_t));
     
@@ -88,7 +88,7 @@ bool sc_shared_memory_create(struct sc_shared_memory *shm, const char *name, siz
     }
 
 #else
-    // Linux 使用 POSIX 共享内存
+    // Linux uses POSIX shared memory
     char shm_name[256];
     snprintf(shm_name, sizeof(shm_name), "/%s", name);
     
@@ -258,10 +258,10 @@ bool sc_shared_memory_write_frame(struct sc_shared_memory *shm,
 
     struct sc_shared_frame_buffer *buffer = (struct sc_shared_frame_buffer *)shm->data;
     
-    // 写入头信息
+    // Write header information
     memcpy(&buffer->header, header, sizeof(struct sc_frame_header));
     
-    // 写入帧数据
+    // Write frame data
     memcpy(buffer->frame_data, frame_data, header->frame_size);
     
     return true;
@@ -277,16 +277,16 @@ bool sc_shared_memory_read_frame(struct sc_shared_memory *shm,
 
     struct sc_shared_frame_buffer *buffer = (struct sc_shared_frame_buffer *)shm->data;
     
-    // 读取头信息
+    // Read header information
     memcpy(header, &buffer->header, sizeof(struct sc_frame_header));
     
-    // 检查帧数据大小
+    // Check frame data size
     if (header->frame_size > max_size) {
         LOGE("Frame data too large for buffer");
         return false;
     }
     
-    // 读取帧数据
+    // Read frame data
     if (frame_data) {
         memcpy(frame_data, buffer->frame_data, header->frame_size);
     }

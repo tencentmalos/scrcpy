@@ -39,7 +39,7 @@ bool sc_file_mapping_create(struct sc_file_mapping *mapping, const char *name, s
     mapping->size = size;
     mapping->is_creator = true;
     
-    // 构建文件路径
+    // Construct file path
     const char* temp_dir = sc_get_temp_dir();
     size_t path_len = strlen(temp_dir) + strlen(name) + 20;
     mapping->file_path = malloc(path_len);
@@ -49,7 +49,7 @@ bool sc_file_mapping_create(struct sc_file_mapping *mapping, const char *name, s
     
     snprintf(mapping->file_path, path_len, "%sscrcpy_%s.map", temp_dir, name);
     
-    // 创建文件
+    // Create file
     mapping->fd = open(mapping->file_path, O_CREAT | O_RDWR | O_TRUNC, 0666);
     if (mapping->fd == -1) {
         LOGE("Failed to create mapping file: %s, error: %s", mapping->file_path, strerror(errno));
@@ -57,7 +57,7 @@ bool sc_file_mapping_create(struct sc_file_mapping *mapping, const char *name, s
         return false;
     }
     
-    // 设置文件大小
+    // Set file size
     if (ftruncate(mapping->fd, size) == -1) {
         LOGE("Failed to set file size: %s", strerror(errno));
         close(mapping->fd);
@@ -66,7 +66,7 @@ bool sc_file_mapping_create(struct sc_file_mapping *mapping, const char *name, s
         return false;
     }
     
-    // 映射文件到内存
+    // Map file to memory
     mapping->data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, mapping->fd, 0);
     if (mapping->data == MAP_FAILED) {
         LOGE("Failed to map file to memory: %s", strerror(errno));
@@ -76,7 +76,7 @@ bool sc_file_mapping_create(struct sc_file_mapping *mapping, const char *name, s
         return false;
     }
     
-    // 初始化内存为零
+    // Initialize memory to zero
     memset(mapping->data, 0, size);
     
     LOGI("Created file mapping: %s, size: %zu", mapping->file_path, size);
@@ -92,7 +92,7 @@ bool sc_file_mapping_open(struct sc_file_mapping *mapping, const char *name, siz
     mapping->size = size;
     mapping->is_creator = false;
     
-    // 构建文件路径
+    // Construct file path
     const char* temp_dir = sc_get_temp_dir();
     size_t path_len = strlen(temp_dir) + strlen(name) + 20;
     mapping->file_path = malloc(path_len);
@@ -102,7 +102,7 @@ bool sc_file_mapping_open(struct sc_file_mapping *mapping, const char *name, siz
     
     snprintf(mapping->file_path, path_len, "%s/scrcpy_%s.map", temp_dir, name);
     
-    // 打开现有文件
+    // Open existing file
     mapping->fd = open(mapping->file_path, O_RDWR);
     if (mapping->fd == -1) {
         LOGE("Failed to open mapping file: %s, error: %s", mapping->file_path, strerror(errno));
@@ -110,7 +110,7 @@ bool sc_file_mapping_open(struct sc_file_mapping *mapping, const char *name, siz
         return false;
     }
     
-    // 验证文件大小
+    // Validate file size
     struct stat st;
     if (fstat(mapping->fd, &st) == -1) {
         LOGE("Failed to get file stats: %s", strerror(errno));
@@ -126,7 +126,7 @@ bool sc_file_mapping_open(struct sc_file_mapping *mapping, const char *name, siz
         return false;
     }
     
-    // 映射文件到内存
+    // Map file to memory
     mapping->data = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, mapping->fd, 0);
     if (mapping->data == MAP_FAILED) {
         LOGE("Failed to map file to memory: %s", strerror(errno));
@@ -153,7 +153,7 @@ void sc_file_mapping_destroy(struct sc_file_mapping *mapping) {
     }
     
     if (mapping->file_path) {
-        // 只有创建者才删除文件
+        // Only the creator deletes the file
         if (mapping->is_creator) {
             unlink(mapping->file_path);
             LOGI("Removed mapping file: %s", mapping->file_path);
@@ -179,13 +179,13 @@ bool sc_file_mapping_write_frame(struct sc_file_mapping *mapping,
 
     struct sc_shared_frame_buffer *buffer = (struct sc_shared_frame_buffer *)mapping->data;
     
-    // 写入头信息
+    // Write header information
     memcpy(&buffer->header, header, sizeof(struct sc_frame_header));
     
-    // 写入帧数据
+    // Write frame data
     memcpy(buffer->frame_data, frame_data, header->frame_size);
     
-    // 确保数据写入磁盘
+    // Ensure data is written to disk
     msync(mapping->data, total_size, MS_ASYNC);
     
     return true;
@@ -201,16 +201,16 @@ bool sc_file_mapping_read_frame(struct sc_file_mapping *mapping,
 
     struct sc_shared_frame_buffer *buffer = (struct sc_shared_frame_buffer *)mapping->data;
     
-    // 读取头信息
+    // Read header information
     memcpy(header, &buffer->header, sizeof(struct sc_frame_header));
     
-    // 检查帧数据大小
+    // Check frame data size
     if (header->frame_size > max_size) {
         LOGE("Frame data too large for buffer: %u > %zu", header->frame_size, max_size);
         return false;
     }
     
-    // 读取帧数据
+    // Read frame data
     if (frame_data && header->frame_size > 0) {
         memcpy(frame_data, buffer->frame_data, header->frame_size);
     }
