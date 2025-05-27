@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -14,7 +18,12 @@ struct sc_file_mapping {
     void *data;
     size_t size;
     char *file_path;
-    int fd;
+#ifdef _WIN32
+    HANDLE fd;         // File handle for Windows
+    HANDLE hMapFile;   // Mapping object handle for Windows
+#else
+    int fd;            // File descriptor for POSIX
+#endif
     bool is_creator;  // Whether this instance is the creator
 };
 
