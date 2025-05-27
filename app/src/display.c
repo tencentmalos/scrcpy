@@ -101,8 +101,6 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
     display->pending.flags = 0;
     display->pending.frame = NULL;
     display->has_frame = false;
-    display->last_updated_frame_count = 0;
-    display->copy_shared_frame_index = 0;
 
     if (icon_novideo) {
         // Without video, set a static scrcpy icon as window content
@@ -296,8 +294,6 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
         return SC_DISPLAY_RESULT_PENDING;
     } 
 
-    display->last_updated_frame_count++;
-
     return SC_DISPLAY_RESULT_OK;
 }
 
@@ -370,13 +366,19 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
 
     SDL_RenderPresent(display->renderer);
 
-    bool frame_not_same = (display->copy_shared_frame_index != display->last_updated_frame_count);
-    if(display->image_transmitter->enabled && frame_not_same) 
+    
+    bool frame_been_consumed = (display->image_transmitter->frame_sequence == display->image_transmitter->now_consume_frame);
+    bool is_over_time = false;
+    int64_t now_time_ms = net_cmd_query_now_time_ms();
+    // if(now_time_ms >= display->image_transmitter->last_send_time_ms + 1000){
+    //     is_over_time = true;
+    //     display->image_transmitter->last_send_time_ms = now_time_ms;
+    // }
+
+    if(display->image_transmitter->enabled && (frame_been_consumed || is_over_time)) 
     {
         //Do image shared here
         sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
-
-        display->copy_shared_frame_index = display->last_updated_frame_count;
     }
 
     return SC_DISPLAY_RESULT_OK;

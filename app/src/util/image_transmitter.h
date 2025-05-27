@@ -19,11 +19,15 @@ struct sc_image_transmitter {
     struct sc_file_mapping mapping;
     bool enabled;
     uint32_t frame_sequence;
+    uint32_t now_consume_frame;
+
     char shm_name[64];
     size_t shm_size;
     
     uint8_t *rgb_buffer;
     size_t rgb_buffer_size;
+    
+    int64_t last_send_time_ms;
 };
 
 

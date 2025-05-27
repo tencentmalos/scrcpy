@@ -76,6 +76,8 @@ struct sc_screen {
     enum sc_eye_mode eye_mode;
 
     struct sc_image_transmitter *image_transmitter;
+
+    bool force_hide_window;
 };
 
 struct sc_screen_params {
@@ -112,6 +114,7 @@ struct sc_screen_params {
     uint16_t cli_service_port;
 
     struct sc_image_transmitter* image_transmitter;
+    bool hide_window;
 };
 
 int sc_test_add(int a, int b);

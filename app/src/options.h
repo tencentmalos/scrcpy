@@ -333,7 +333,8 @@ struct scrcpy_options {
 
     bool enable_shared_image;
 
-    const char* run_path;
+    bool hide_window;
+    //const char* run_path;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

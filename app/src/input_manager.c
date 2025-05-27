@@ -154,6 +154,19 @@ static void input_cmd_callback_raise_window(uint16_t req_id, const char* cmd, co
     LOGD("raise_window called finished!");
 }
 
+static void input_cmd_callback_frame_comsumed(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    int consume_index = atoi(extra);
+    im->screen->image_transmitter->now_consume_frame = consume_index;
+}
+
+static void input_cmd_callback_enable_image_transmit(uint16_t req_id, const char* cmd, const char* extra, void* userdata) {
+    struct sc_input_manager *im = (struct sc_input_manager *)userdata;
+
+    im->screen->image_transmitter->enabled = true;
+}
+
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -193,16 +206,18 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->is_cmd_input_request_exit = false;
 
     //Register input command callbacks
-    net_cmd_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im);
-    net_cmd_register_command("exit", input_cmd_callback_exit, im);
-    net_cmd_register_command("force_kill", input_cmd_callback_force_kill, im);
-    net_cmd_register_command("save_screen", input_cmd_callback_save_screen, im);
-    net_cmd_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im);
-    net_cmd_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im);
-    net_cmd_register_command("fullscreen", input_cmd_callback_fullscreen, im);
-    net_cmd_register_command("resize_manual", input_cmd_callback_resize_manual, im);
-    net_cmd_register_command("change_position_manual", input_cmd_callback_change_position_manual, im);
-    net_cmd_register_command("raise_window", input_cmd_callback_raise_window, im);
+    net_cmd_register_command("change_eye_mode", input_cmd_callback_change_eye_mode, im, false);
+    net_cmd_register_command("exit", input_cmd_callback_exit, im, false);
+    net_cmd_register_command("force_kill", input_cmd_callback_force_kill, im, false);
+    net_cmd_register_command("save_screen", input_cmd_callback_save_screen, im, true);
+    net_cmd_register_command("resize_to_1_1", input_cmd_callback_resize_to_1_1, im, false);
+    net_cmd_register_command("resize_to_fit", input_cmd_callback_resize_to_fit, im, false);
+    net_cmd_register_command("fullscreen", input_cmd_callback_fullscreen, im, false);
+    net_cmd_register_command("resize_manual", input_cmd_callback_resize_manual, im, false);
+    net_cmd_register_command("change_position_manual", input_cmd_callback_change_position_manual, im, false);
+    net_cmd_register_command("raise_window", input_cmd_callback_raise_window, im, false);
+    net_cmd_register_command("frame_comsumed", input_cmd_callback_frame_comsumed, im, false);
+    net_cmd_register_command("enable_image_transmit", input_cmd_callback_enable_image_transmit, im, false);
 }
 
 static void
@@ -1170,9 +1185,6 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
-    //call cmd input loop first
-    net_cmd_loop_once();
-    //sc_cmd_input_loop_once();
 
 
     bool control = im->controller;

@@ -9,7 +9,6 @@
 
 #include <vector>
 
-
 bool sc_image_transmitter_init(struct sc_image_transmitter *transmitter, 
                                const char *shm_name, 
                                size_t max_frame_size) {
@@ -41,8 +40,10 @@ bool sc_image_transmitter_init(struct sc_image_transmitter *transmitter,
         return false;
     }
     
-    transmitter->enabled = true;
+    transmitter->enabled = false;
     transmitter->frame_sequence = 0;
+    transmitter->now_consume_frame = 0;
+    transmitter->last_send_time_ms = 0;
     
     LOGI("Image transmitter initialized: %s, head: %d, total size: %zu", shm_name, sizeof(struct sc_frame_header), transmitter->shm_size);
     return true;
@@ -120,9 +121,7 @@ bool sc_image_transmitter_send_frame(struct sc_image_transmitter *transmitter,  
     
     // 通过 net_cmd 通知 cli-tools 有新帧可用
     char notification[128];
-    snprintf(notification, sizeof(notification), 
-             "{\"width\":%d,\"height\":%d,\"sequence\":%d,\"timestamp\":%llu}",
-             header.width, header.height, header.sequence, header.timestamp);
+    snprintf(notification, sizeof(notification), "%u", transmitter->frame_sequence);
     
     net_cmd_send_request("new_frame", notification);
     

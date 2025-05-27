@@ -118,7 +118,7 @@ enum {
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
     OPT_ENABLE_SHARED_IMAGE,
-    OPT_RUN_PATH,
+    OPT_HIDE_WINDOW,
 };
 
 struct sc_option {
@@ -482,9 +482,9 @@ static const struct sc_option options[] = {
         .longopt = "enable_shared_image",
         .text = "enable shared image mode",
     },
-        {
-        .longopt_id = OPT_RUN_PATH,
-        .longopt = "run_path",
+    {
+        .longopt_id = OPT_HIDE_WINDOW,
+        .longopt = "hide-window",
         .text = "set the running path for find adb/server/icons here",
     },
     {
@@ -2854,10 +2854,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     LOGW("now shared image mode is enabled.");
                 }
                 break;
-            case OPT_RUN_PATH:
+            case OPT_HIDE_WINDOW:
                 {
-                    opts->run_path = optarg;
-                    LOGW("running path:%s", opts->run_path);
+                    opts->hide_window = true;
+                    LOGW("hide window enabled.");
                 }
                 break;
             case OPT_NEW_DISPLAY:

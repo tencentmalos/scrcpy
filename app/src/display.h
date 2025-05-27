@@ -39,9 +39,6 @@ struct sc_display {
     } pending;
 
     bool has_frame;
-
-    uint64_t last_updated_frame_count;
-    uint64_t copy_shared_frame_index;
 };
 
 enum sc_display_result {

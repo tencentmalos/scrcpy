@@ -180,8 +180,15 @@ event_loop(struct scrcpy *s) {
     int64_t last_check_work_time_ms = 0;
     int64_t check_alive_period_ms = 1000;
 
+    //begin event loop, we just send start to work notify here
+    net_cmd_send_start_to_work();
+
     SDL_Event event;
     while (true) {
+        //call cmd input loop first
+        net_cmd_loop_once();
+        //sc_cmd_input_loop_once();
+
         //netevent_loop_once(ne);
 
         //Check if request to exit
@@ -473,10 +480,12 @@ scrcpy(struct scrcpy_options *options) {
             sc_request_exit();
         }
         
+        //redirect log to network
+        net_cmd_redirect_log_to_network();
         
         char shm_name[64];
         snprintf(shm_name, sizeof(shm_name), "scrcpy_frames_%d", (int)options->cli_service_port);
-        size_t max_frame_size = 8192 * 8192 * 4; // 8k*8k RGB32
+        size_t max_frame_size = 8192 * 4096 * 4; // 8k*4k RGB32
         
         if (!sc_image_transmitter_init(&scrcpy.image_transmitter, shm_name, max_frame_size)) {
             LOGE("Failed to initialize image transmitter");
@@ -932,6 +941,7 @@ aoa_complete:
             .external_window_handle = options->external_window_handle,
             .cli_service_port = options->cli_service_port,
             .image_transmitter = &s->image_transmitter,
+            .hide_window = options->hide_window,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {

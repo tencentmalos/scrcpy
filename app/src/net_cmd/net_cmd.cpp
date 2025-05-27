@@ -7,6 +7,7 @@
 #include <event2/util.h>
 #include <string.h>
 #include <stdlib.h>
+#include <cstdarg> // For va_list, va_start, vsnprintf, va_end
 
 #include <sys/time.h>
 
@@ -21,6 +22,8 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+
+#include <SDL2/SDL.h>
 
 
 extern "C" {
@@ -60,6 +63,7 @@ struct netevent_command_info {
     std::string             command_name;
     net_cmd_callback        callback;
     void*                   userdata;
+    bool                    need_response;
 };
 
 
@@ -69,6 +73,7 @@ struct netevent_command_info {
 
 struct netevent_response_info
 {
+    bool        need_response;
     std::string cmd_name;
     uint16_t    request_id;
     uint8_t     is_suc;
@@ -131,6 +136,8 @@ void net_cmd_destroy() {
 }
 
 static void netevent_send_last_result() {
+    if(!g_netevent_response_info.need_response) return;
+
     net_cmd_send_response(g_netevent_response_info.is_suc,
         g_netevent_response_info.request_id,
         g_netevent_response_info.cmd_name.c_str(),
@@ -148,10 +155,16 @@ static void on_netevent_command(uint16_t req_id, const char *cmd, const char *co
     auto it = g_netevent_command_map.find(cmdname);
     if (it != g_netevent_command_map.end()) {
         //default is suc here        
-        net_cmd_set_last_result(req_id, 1, cmd, "");
+        if(it->second.need_response) {
+            net_cmd_set_last_result(req_id, 1, cmd, "");
+        } else {
+            //Just ignore here
+            net_cmd_set_last_result_ignore();
+        }
         it->second.callback(req_id, cmd, content, it->second.userdata);
     } else {
-        net_cmd_set_last_result(req_id, 0, cmd, "unknown");
+        LOGW("netcmd unknown command:%s", cmdname.c_str());
+        //net_cmd_set_last_result(req_id, 0, cmd, "unknown");
         //LOGI("icmd-unknown-0: %s %s", cmdname.c_str(), extras.c_str());
     }
 
@@ -166,28 +179,28 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
     struct evbuffer *input = bufferevent_get_input(bev);
     
     while (1) {
-        // 1. 检查是否有完整包头
+        // 1. Check if there is a complete packet header
         if (evbuffer_get_length(input) < sizeof(netevent_header)) {
             return;
         }
         
-        // 2. 读取包头
+        // 2. Read packet header
         netevent_header header;
         evbuffer_copyout(input, &header, sizeof(header));
         header.id = (uint16_t)htons((int16_t)header.id);
         header.cmd_len = htonl(header.cmd_len);
         header.content_len = htonl(header.content_len);
         
-        // 3. 检查是否有完整数据包
+        // 3. Check if there is a complete data packet
         size_t total_len = sizeof(header) + header.cmd_len + header.content_len;
         if (evbuffer_get_length(input) < total_len) {
             return;
         }
         
-        // 4. 移除包头
+        // 4. Remove packet header
         evbuffer_drain(input, sizeof(header));
         
-        // 5. 读取cmd和content
+        // 5. Read cmd and content
         char *cmd = (char*)malloc(header.cmd_len + 1);
         char *content = header.content_len > 0 ? (char*)malloc(header.content_len + 1) : NULL;
         
@@ -199,7 +212,7 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
             content[header.content_len] = '\0';
         }
         
-        // 6. 回调处理
+        // 6. Callback processing
         on_netevent_command(header.id, cmd, content, ne->userdata);
         // if (ne->on_command) {
         //     ne->on_command(cmd, content, ne->userdata);
@@ -210,7 +223,7 @@ static void read_cb(struct bufferevent *bev, void *ctx) {
     }
 }
 
-// 事件回调
+// Event callback
 static void event_cb(struct bufferevent *bev, short events, void *ctx) {
     struct net_cmd_state *ne = (struct net_cmd_state *)ctx;
     if (events & BEV_EVENT_ERROR) {
@@ -255,7 +268,7 @@ int net_cmd_connect(const char *host, int port) {
     return 0;
 }
 
-void net_cmd_register_command(const char* name, net_cmd_callback callback, void* userdata) {
+void net_cmd_register_command(const char* name, net_cmd_callback callback, void* userdata, bool need_response) {
     //ToDo: add implement here
     std::string cmdname = name;
     LOGI("netevent command: %s registered!", name);
@@ -264,6 +277,7 @@ void net_cmd_register_command(const char* name, net_cmd_callback callback, void*
     info.command_name = cmdname;
     info.callback = callback;
     info.userdata = userdata;
+    info.need_response = need_response;
 
     g_netevent_command_map.insert(std::make_pair(cmdname, info));
 }
@@ -323,6 +337,56 @@ void net_cmd_send_check_alive() {
     net_cmd_send_request("check_alive", buf);
 }
 
+void net_cmd_send_start_to_work() {
+    net_cmd_send_request("start_to_work", "");
+}
+
+uint16_t net_cmd_send_request_fmt(const char *cmd,
+                                const char *format, ...) {
+    if (!g_net_state || !g_net_state->bev || !cmd) return 0;
+    
+    char* formatted_content = nullptr;
+    int content_len = 0;
+
+    if (format) {
+        va_list args;
+        va_start(args, format);
+
+        // Determine the length of the formatted string
+        va_list args_copy;
+        va_copy(args_copy, args);
+        int len = vsnprintf(nullptr, 0, format, args_copy);
+        va_end(args_copy);
+
+        if (len < 0) {
+            LOGE("Error formatting content for command %s", cmd);
+            va_end(args);
+            return 0; 
+        }
+
+        if (len > 0) {
+            formatted_content = (char*)malloc(len + 1);
+            if (!formatted_content) {
+                LOGE("Failed to allocate memory for formatted content (command: %s)", cmd);
+                va_end(args);
+                return 0; 
+            }
+            vsnprintf(formatted_content, len + 1, format, args);
+            content_len = len;
+        }
+        va_end(args);
+    }
+
+    uint16_t req_id = net_cmd_send_request(cmd, formatted_content);
+    
+    if (formatted_content) {
+        free(formatted_content);
+    }
+    
+    return req_id;
+}
+
+
 bool net_cmd_loop_once() {
     if (!g_net_state || !g_net_state->base) return false;
     
@@ -330,29 +394,33 @@ bool net_cmd_loop_once() {
 
     int res = event_base_loop(g_net_state->base, flags);
     
-    // 返回true表示还有事件待处理
+    // Returns true if there are events to process
     return res == 0; 
 }
 
-// 停止事件循环
+// Stop event loop
 void net_cmd_stop() {
     if (!g_net_state || !g_net_state->base) return;
     event_base_loopbreak(g_net_state->base);
 }
 
-// 检查是否正在运行
+// Check if running
 bool net_cmd_is_running() {
     return g_net_state && g_net_state->base && !event_base_got_break(g_net_state->base);
 }
 
 
 void net_cmd_set_last_result(uint16_t req_id, uint8_t is_suc, const char* cmd, const char* result_info) {
+    g_netevent_response_info.need_response = true;
     g_netevent_response_info.cmd_name = cmd;
     g_netevent_response_info.request_id = req_id;
     g_netevent_response_info.is_suc = is_suc;
     g_netevent_response_info.response_result = result_info;
 }
 
+void net_cmd_set_last_result_ignore() {
+    g_netevent_response_info.need_response = false;
+}
 
 int64_t net_cmd_query_now_time_us() {
     struct timeval now_time;
@@ -371,3 +439,10 @@ void net_cmd_set_current_fps(uint32_t fps, uint32_t skiped_fps) {
     g_net_skiped_fps = skiped_fps;
 }
 
+static void custom_netcmd_log_function(void *userdata, int category, SDL_LogPriority priority, const char *message) {
+    net_cmd_send_request_fmt("log_request", "%d %s", (int)priority, message);
+}
+
+void net_cmd_redirect_log_to_network() {
+    SDL_LogSetOutputFunction(custom_netcmd_log_function, nullptr);
+}

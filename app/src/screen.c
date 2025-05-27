@@ -383,6 +383,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.start_fps_counter = params->start_fps_counter;
 
     screen->image_transmitter = params->image_transmitter;
+    screen->force_hide_window = params->hide_window;
 
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
@@ -461,6 +462,11 @@ sc_screen_init(struct sc_screen *screen,
         int tmpheight;
         SDL_GetWindowSize(screen->window, &tmpwidth, &tmpheight);
         LOGI("Create window suc. size is %d x %d .", tmpwidth, tmpheight);
+
+        if(params->hide_window) {
+            SDL_HideWindow(screen->window);
+            LOGI("Window been hide for scrcpy --hide-window!");
+        }
     }
 
     SDL_Surface *icon = scrcpy_icon_load();
@@ -569,7 +575,11 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
         sc_fps_counter_start(&screen->fps_counter);
     }
 
-    SDL_ShowWindow(screen->window);
+    if(!screen->force_hide_window) {
+        //force hide window do not need show window here
+        SDL_ShowWindow(screen->window);
+    }
+    
     sc_screen_update_content_rect(screen);
 }
 

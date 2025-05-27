@@ -47,7 +47,7 @@
             "name": "macos debugger",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/scrcpy",
+            "program": "/Users/bytedance/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/scrcpy",
             //"program": "${workspaceFolder}/release/work/build-win64/dist/scrcpy.exe",
             "args": [
                 "-s",
@@ -64,7 +64,7 @@
                 "--no-audio",
                 "--cli_service_port=5566",
                 ],
-            "cwd": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0",
+            "cwd": "/Users/bytedance/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0",
             //"preLaunchTask": "build", 
             "environment": [],
             "externalConsole": false,
@@ -72,20 +72,12 @@
         }
         ,
         {
-            "name": "cli-tools debugger",
+            "name": "macos attach",
             "type": "cppdbg",
-            "request": "launch",
-            "program": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliDesktopApp/bin/Debug/net8.0/CliDesktopApp",
+            "request": "attach",
+            "program": "/Users/bytedance/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/mac-arm64/scrcpy/v3.0/scrcpy",
             //"program": "${workspaceFolder}/release/work/build-win64/dist/scrcpy.exe",
-            "args": [
-                "--max-size=1920",
-                "--external-window-handle=6139597248", 
-                "--no-audio"
-                ],
-            "cwd": "/Users/bytedance/Desktop/workspace/dev_tools/cli_tool/CliDesktopApp/bin/Debug/net8.0/",
             //"preLaunchTask": "build", 
-            "environment": [],
-            "externalConsole": false,
             "MIMode": "lldb"
         }
 
