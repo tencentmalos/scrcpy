@@ -171,8 +171,11 @@ public class ScreenCapture extends SurfaceCapture {
             // If one region is 0-height (e.g. 0x0 crop), and the other is not, max will correctly pick the non-zero height.
             // If both are 0-height, combinedHeight will be 0.
 
-            videoSize = new Size(combinedWidth, combinedHeight).round8(); // Ensure .limit(maxSize) is applied
-            //videoSize = new Size(combinedWidth, combinedHeight).limit(maxSize).round8(); // Ensure .limit(maxSize) is applied
+            //videoSize = new Size(combinedWidth, combinedHeight).round8(); // Ensure .limit(maxSize) is applied
+            videoSize = new Size(combinedWidth, combinedHeight).limit(maxSize).round8(); // Ensure .limit(maxSize) is applied
+
+            videoSize1 = new Size(videoSize.getWidth()/2, videoSize.getHeight());
+            videoSize2 = new Size(videoSize.getWidth()/2, videoSize.getHeight());
 
             Ln.w(String.format("Crop2 runing, displaySize: %d x %d", displaySize.getWidth(), displaySize.getHeight()));
             Ln.w(String.format("Crop2 runing, videoSize1: %d x %d", videoSize1.getWidth(), videoSize1.getHeight()));
