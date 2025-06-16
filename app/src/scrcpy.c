@@ -118,6 +118,17 @@ sdl_set_hints(const char *render_driver) {
         LOGW("Could not set render driver");
     }
 
+    // App name used in various contexts (such as PulseAudio)
+#if defined(SCRCPY_SDL_HAS_HINT_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "scrcpy")) {
+        LOGW("Could not set app name");
+    }
+#elif defined(SCRCPY_SDL_HAS_HINT_AUDIO_DEVICE_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "scrcpy")) {
+        LOGW("Could not set audio device app name");
+    }
+#endif
+
     // Linear filtering
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
         LOGW("Could not enable linear filtering");
@@ -176,7 +187,7 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s) {
+event_loop(struct scrcpy *s, bool has_screen) {
     int64_t last_check_work_time_ms = 0;
     int64_t check_alive_period_ms = 1000;
 
@@ -255,7 +266,7 @@ event_loop(struct scrcpy *s) {
                 break;
             }
             default:
-                if (!sc_screen_handle_event(&s->screen, &event)) {
+                if (has_screen && !sc_screen_handle_event(&s->screen, &event)) {
                     return SCRCPY_EXIT_FAILURE;
                 }
                 break;
@@ -1071,7 +1082,7 @@ aoa_complete:
     //sc_screen_force_update_one_frame(&s->screen);
 
 
-    ret = event_loop(s);
+    ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
 
