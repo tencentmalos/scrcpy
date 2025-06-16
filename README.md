@@ -2,7 +2,7 @@
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
-# scrcpy (v3.2)
+# scrcpy (v3.3)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -58,7 +58,7 @@ Make sure you [enabled USB debugging][enable-adb] on your device(s).
 On some devices (especially Xiaomi), you might get the following error:
 
 ```
-java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
 ```
 
 In that case, you need to enable [an additional option][control] `USB debugging
