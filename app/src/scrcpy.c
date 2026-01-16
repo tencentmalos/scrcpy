@@ -187,7 +187,7 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s) {
+event_loop(struct scrcpy *s, bool has_screen) {
     int64_t last_check_work_time_ms = 0;
     int64_t check_alive_period_ms = 1000;
 
@@ -1080,13 +1080,8 @@ aoa_complete:
     //SDL_ShowWindow(s->screen.window);
 
     //sc_screen_force_update_one_frame(&s->screen);
-
-
-    //start command input thread here
-    sc_start_cmd_input_thread();
-
     //BugFix: add here to let window always show here
-    SDL_ShowWindow(s->screen.window);
+    //SDL_ShowWindow(s->screen.window);
 
     ret = event_loop(s, options->window);
     terminate_event_loop();

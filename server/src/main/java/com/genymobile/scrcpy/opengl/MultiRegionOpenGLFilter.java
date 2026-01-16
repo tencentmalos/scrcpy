@@ -112,10 +112,10 @@ public class MultiRegionOpenGLFilter implements OpenGLFilter {
 //        };
 
         float[] texCoords = {
-                1, 0, // Bottom-left
-                1, 1, // Bottom-right
-                0, 0, // Top-left
-                0, 1, // Top-right
+                0, 0, // Bottom-left
+                0, 1, // Bottom-right
+                1, 0, // Top-left
+                1, 1, // Top-right
         };
 
         vertexBuffer = GLUtils.createFloatBuffer(vertices);

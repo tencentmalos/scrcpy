@@ -71,4 +71,4 @@ cp -r "$ADB_INSTALL_DIR"/. "$WINXX_BUILD_DIR/dist/"
 
 
 # copy to out test directory 
-cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/cli_tool/CliUiCore/ExternalApps/win64/scrcpy/v3.0/"
+cp -r "$WINXX_BUILD_DIR/dist/." "/d/workspace/dev_tools/spatial_debug_tool/UiCore/ExternalApps/win64/scrcpy/v3.0/"

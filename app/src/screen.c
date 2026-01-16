@@ -264,13 +264,6 @@ void sc_screen_force_update_one_frame(struct sc_screen *screen) {
     }
 }
 
-
-void sc_screen_force_update_one_frame(struct sc_screen *screen) {
-    if(screen->video) {
-        sc_screen_render(screen, true);
-    }
-}
-
 #if defined(__APPLE__) || defined(_WIN32)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
