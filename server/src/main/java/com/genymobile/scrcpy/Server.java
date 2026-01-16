@@ -24,6 +24,7 @@ import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
 
@@ -96,7 +97,6 @@ public final class Server {
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
-        prepareMainLooper();
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
@@ -199,6 +199,7 @@ public final class Server {
         Looper.prepare();
         synchronized (Looper.class) {
             try {
+                @SuppressLint("DiscouragedPrivateApi")
                 Field field = Looper.class.getDeclaredField("sMainLooper");
                 field.setAccessible(true);
                 field.set(null, Looper.myLooper());
@@ -224,9 +225,15 @@ public final class Server {
     }
 
     private static void internalMain(String... args) throws Exception {
+        Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Ln.e("Exception on thread " + t, e);
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(t, e);
+            }
         });
+
+        prepareMainLooper();
 
         Options options = Options.parse(args);
 
