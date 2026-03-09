@@ -32,35 +32,44 @@ static char* sc_win_error_to_string(DWORD error_code) {
 #endif
 
 const char* sc_get_temp_dir(void) {
-    const char* temp_dir = getenv("TMP"); // Windows typically uses TMP or TEMP
-    if (temp_dir && strlen(temp_dir) > 0) {
-        return temp_dir;
-    }
-    
-    temp_dir = getenv("TEMP");
-    if (temp_dir && strlen(temp_dir) > 0) {
-        return temp_dir;
-    }
-
-#ifndef _WIN32 // POSIX specific
-    temp_dir = getenv("TMPDIR");
-    if (temp_dir && strlen(temp_dir) > 0) {
-        return temp_dir;
-    }
-    return "/tmp"; // Default for POSIX if others are not set
-#else
-    // Windows default if TMP/TEMP not set (less common but possible)
-    // GetWindowsDirectory or GetTempPath could be used for a more robust default
+#ifdef _WIN32
+    // Use GetTempPathA first on Windows — it always returns a valid native Windows
+    // path. getenv("TMP") can return a POSIX-style path (e.g. "/tmp") when the
+    // process is launched from an MSYS2/MinGW shell, which would make CreateFileA
+    // fail with ERROR_INVALID_NAME ("FD name illegal").
     static char windows_temp_path[MAX_PATH];
-    if (GetTempPathA(MAX_PATH, windows_temp_path) > 0) {
-        // Remove trailing backslash if present for consistency
-        size_t len = strlen(windows_temp_path);
-        if (len > 0 && (windows_temp_path[len - 1] == '\\' || windows_temp_path[len - 1] == '/')) {
+    DWORD len = GetTempPathA(MAX_PATH, windows_temp_path);
+    if (len > 0 && len < MAX_PATH) {
+        // Remove trailing backslash for consistent path construction
+        if (len > 1 && (windows_temp_path[len - 1] == '\\' || windows_temp_path[len - 1] == '/')) {
             windows_temp_path[len - 1] = '\0';
         }
         return windows_temp_path;
     }
-    return "C:\\Temp"; // Fallback, though GetTempPath should usually work
+    // Fallback to environment variables if GetTempPathA fails
+    const char* temp_dir = getenv("TMP");
+    if (temp_dir && strlen(temp_dir) > 0) {
+        return temp_dir;
+    }
+    temp_dir = getenv("TEMP");
+    if (temp_dir && strlen(temp_dir) > 0) {
+        return temp_dir;
+    }
+    return "C:\\Temp";
+#else
+    const char* temp_dir = getenv("TMPDIR");
+    if (temp_dir && strlen(temp_dir) > 0) {
+        return temp_dir;
+    }
+    temp_dir = getenv("TMP");
+    if (temp_dir && strlen(temp_dir) > 0) {
+        return temp_dir;
+    }
+    temp_dir = getenv("TEMP");
+    if (temp_dir && strlen(temp_dir) > 0) {
+        return temp_dir;
+    }
+    return "/tmp";
 #endif
 }
 

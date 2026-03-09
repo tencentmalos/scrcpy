@@ -156,23 +156,30 @@ main(int argc, char *argv[]) {
 int sc_run_as_dll_mode(const char* arginfo)
 {
     const char *delimiter = " ";
-    
+
     char argbuf[2048];
 
     strcpy(argbuf, arginfo);
 
     char *argv[50];
     int argc = 0;
-    
 
     char *token = strtok(argbuf, delimiter);
-    while (token != NULL) {
+    while (token != NULL && argc < 49) {
+        // Strip surrounding double-quotes so that a serial like "192.168.0.1:2233"
+        // (with literal quotes, as some callers produce) is passed to ADB without
+        // the extra quote characters, which would cause it to fail device lookup.
+        size_t len = strlen(token);
+        if (len >= 2 && token[0] == '"' && token[len - 1] == '"') {
+            token[len - 1] = '\0';
+            token++;
+        }
         argv[argc++] = token;
         token = strtok(NULL, delimiter);
     }
 
     int ret = main_scrcpy(argc, argv);
-    
+
     return ret;
 }
 

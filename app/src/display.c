@@ -373,19 +373,20 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
 
     SDL_RenderPresent(display->renderer);
 
-    
-    bool frame_been_consumed = (display->image_transmitter->frame_sequence == display->image_transmitter->now_consume_frame);
-    bool is_over_time = false;
-    int64_t now_time_ms = net_cmd_query_now_time_ms();
-    // if(now_time_ms >= display->image_transmitter->last_send_time_ms + 1000){
-    //     is_over_time = true;
-    //     display->image_transmitter->last_send_time_ms = now_time_ms;
-    // }
+    if (display->image_transmitter) {
+        bool frame_been_consumed = (display->image_transmitter->frame_sequence == display->image_transmitter->now_consume_frame);
+        bool is_over_time = false;
+        int64_t now_time_ms = net_cmd_query_now_time_ms();
+        // if(now_time_ms >= display->image_transmitter->last_send_time_ms + 1000){
+        //     is_over_time = true;
+        //     display->image_transmitter->last_send_time_ms = now_time_ms;
+        // }
 
-    if(display->image_transmitter->enabled && (frame_been_consumed || is_over_time)) 
-    {
-        //Do image shared here
-        sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
+        if(display->image_transmitter->enabled && (frame_been_consumed || is_over_time))
+        {
+            //Do image shared here
+            sc_image_transmitter_send_frame(display->image_transmitter, display->renderer);
+        }
     }
 
     return SC_DISPLAY_RESULT_OK;
